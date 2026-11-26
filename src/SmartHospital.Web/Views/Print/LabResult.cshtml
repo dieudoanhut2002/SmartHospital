@@ -1,0 +1,38 @@
+@model SmartHospital.Domain.Laboratory.LabOrder
+@{
+    Layout = null;
+    var hospital = ViewBag.Hospital as SmartHospital.Domain.Organization.Hospital;
+    var patient = ViewBag.Patient as SmartHospital.Domain.Patients.Patient;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Phiếu kết quả xét nghiệm - @Model.OrderCode</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>@@media print { .no-print { display: none; } } body { max-width: 820px; margin: 20px auto; }</style>
+</head>
+<body>
+    <div class="p-4 border">
+        <div class="fw-bold">@hospital?.Name</div>
+        <h5 class="text-center fw-bold my-3">PHIẾU KẾT QUẢ XÉT NGHIỆM (@Model.OrderCode)</h5>
+        <p class="small"><strong>Bệnh nhân:</strong> @patient?.FullName (@patient?.PatientCode) | <strong>Bác sĩ CĐ:</strong> @Model.OrderedByName</p>
+        <table class="table table-sm table-bordered small">
+            <thead><tr><th>Tên xét nghiệm</th><th>Kết quả</th><th>Đơn vị</th><th>Khoảng tham chiếu</th><th>Người duyệt</th></tr></thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.TestName</td>
+                        <td class="fw-bold @(item.Result?.IsAbnormal == true ? "text-danger" : "")">@item.Result?.ResultValue</td>
+                        <td>@item.Result?.Unit</td>
+                        <td>@item.Result?.ReferenceRange</td>
+                        <td>@item.Result?.VerifiedBy</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="no-print mt-3"><button onclick="window.print()" class="btn btn-sm btn-primary">In kết quả</button></div>
+    </div>
+</body>
+</html>

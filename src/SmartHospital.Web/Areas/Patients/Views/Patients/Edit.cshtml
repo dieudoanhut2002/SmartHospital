@@ -1,0 +1,29 @@
+@model SmartHospital.Domain.Patients.Patient
+@{
+    ViewData["Title"] = $"Cập nhật bệnh nhân: {Model.PatientCode}";
+}
+<div class="sh-card p-4">
+    <form asp-action="Edit" method="post">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <div class="row g-3">
+            <div class="col-md-5"><label class="form-label">Họ tên *</label><input name="fullName" value="@Model.FullName" class="form-control" required /></div>
+            <div class="col-md-3"><label class="form-label">Ngày sinh</label><input name="dateOfBirth" value="@Model.DateOfBirth?.ToString("yyyy-MM-dd")" type="date" class="form-control" /></div>
+            <div class="col-md-2"><label class="form-label">Giới tính</label><select name="gender" class="form-select" asp-for="Gender" asp-items="Html.GetEnumSelectList<Gender>()"></select></div>
+            <div class="col-md-2"><label class="form-label">Nhóm máu</label><input name="bloodType" value="@Model.BloodType" class="form-control" /></div>
+            <div class="col-md-4"><label class="form-label">SĐT</label><input name="phoneNumber" value="@Model.PhoneNumber" class="form-control" /></div>
+            <div class="col-md-4"><label class="form-label">CCCD</label><input name="nationalId" value="@Model.NationalId" class="form-control" /></div>
+            <div class="col-md-4"><label class="form-label">Email</label><input name="email" value="@Model.Email" class="form-control" /></div>
+            <div class="col-12"><label class="form-label">Địa chỉ</label><input name="address" value="@Model.Address" class="form-control" /></div>
+            <div class="col-12">
+                <div class="form-check">
+                    <input name="requiresVerification" type="checkbox" value="true" class="form-check-input" checked="@Model.RequiresVerification" />
+                    <label class="form-check-label">Cần xác minh danh tính</label>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3">
+            <button type="submit" class="btn btn-primary">Lưu cập nhật</button>
+            <a asp-action="Detail" asp-route-id="@Model.Id" class="btn btn-outline-secondary ms-2">Hủy</a>
+        </div>
+    </form>
+</div>

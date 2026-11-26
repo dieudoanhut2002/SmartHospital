@@ -1,0 +1,30 @@
+@{
+    ViewData["Title"] = "Trạng thái kỹ thuật hệ thống";
+    var applied = ViewBag.AppliedMigrations as IReadOnlyList<string> ?? [];
+    var pending = ViewBag.PendingMigrations as IReadOnlyList<string> ?? [];
+}
+
+<div class="mb-3 d-flex gap-2">
+    <a asp-action="AuditLogs" class="btn btn-sm btn-outline-primary">Nhật ký Audit</a>
+    <a asp-action="Integrations" class="btn btn-sm btn-outline-primary">Thông điệp Tích hợp</a>
+    <a asp-action="Settings" class="btn btn-sm btn-outline-primary">Cấu hình Hệ thống</a>
+    <a asp-action="Status" class="btn btn-sm btn-primary">Trạng thái Kỹ thuật</a>
+</div>
+
+<div class="sh-card p-4">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Môi trường chạy</dt><dd class="col-sm-9">@ViewBag.EnvironmentName</dd>
+        <dt class="col-sm-3">Database Provider</dt><dd class="col-sm-9">@ViewBag.DatabaseProvider</dd>
+        <dt class="col-sm-3">Kết nối SQL Server</dt>
+        <dd class="col-sm-9">
+            @if ((bool)ViewBag.CanConnect) { <span class="badge bg-success">Sẵn sàng</span> } else { <span class="badge bg-danger">Mất kết nối</span> }
+        </dd>
+        <dt class="col-sm-3">Số hồ sơ bệnh nhân / lượt khám</dt><dd class="col-sm-9">@ViewBag.PatientCount bệnh nhân / @ViewBag.EncounterCount lượt khám</dd>
+        <dt class="col-sm-3">Migrations đã áp dụng</dt>
+        <dd class="col-sm-9">
+            @foreach (var m in applied) { <span class="badge bg-light text-dark border me-1">@m</span> }
+        </dd>
+        <dt class="col-sm-3">Migrations chờ áp dụng</dt>
+        <dd class="col-sm-9">@(pending.Count == 0 ? "Không có (Đã đồng bộ mới nhất)" : string.Join(", ", pending))</dd>
+    </dl>
+</div>

@@ -1,0 +1,552 @@
+@model SmartHospital.Application.MasterData.CatalogSnapshotDto
+@{
+    ViewData["Title"] = "Danh mục Bệnh viện & Dịch vụ";
+    var tab = (string)(ViewBag.ActiveTab ?? "org");
+    var defaultFacId = Model.Facilities.FirstOrDefault()?.Id ?? Guid.Empty;
+    var defaultHospitalId = Model.Hospital?.Id ?? Guid.Empty;
+}
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link @(tab == "org" ? "active fw-semibold" : "")" asp-route-tab="org">Bệnh viện, Cơ sở, Khoa, Chuyên khoa</a></li>
+    <li class="nav-item"><a class="nav-link @(tab == "rooms" ? "active fw-semibold" : "")" asp-route-tab="rooms">Phòng, Phòng khám &amp; Giường (@Model.Beds.Count)</a></li>
+    <li class="nav-item"><a class="nav-link @(tab == "services" ? "active fw-semibold" : "")" asp-route-tab="services">Dịch vụ, Bảng giá &amp; ICD-10</a></li>
+    <li class="nav-item"><a class="nav-link @(tab == "clinical" ? "active fw-semibold" : "")" asp-route-tab="clinical">Xét nghiệm &amp; CĐHA</a></li>
+    <li class="nav-item"><a class="nav-link @(tab == "pharmacy" ? "active fw-semibold" : "")" asp-route-tab="pharmacy">Danh mục Thuốc (@Model.Medicines.Count)</a></li>
+    <li class="nav-item"><a class="nav-link @(tab == "supply" ? "active fw-semibold" : "")" asp-route-tab="supply">Kho, Nhà cung cấp &amp; Vật tư</a></li>
+</ul>
+
+@if (tab == "org")
+{
+    <div class="row g-3">
+        @if (Model.Hospital != null)
+        {
+            <div class="col-12">
+                <div class="sh-card p-3">
+                    <h6 class="fw-bold mb-2">Thông tin Bệnh viện (@Model.Hospital.Code)</h6>
+                    <form asp-action="UpdateHospital" method="post" class="row g-2">
+                        <input type="hidden" name="id" value="@Model.Hospital.Id" />
+                        <div class="col-md-4"><input name="name" value="@Model.Hospital.Name" class="form-control form-control-sm" placeholder="Tên bệnh viện*" required /></div>
+                        <div class="col-md-2"><input name="taxCode" value="@Model.Hospital.TaxCode" class="form-control form-control-sm" placeholder="Mã số thuế" /></div>
+                        <div class="col-md-2"><input name="phone" value="@Model.Hospital.Phone" class="form-control form-control-sm" placeholder="Điện thoại" /></div>
+                        <div class="col-md-2"><input name="email" value="@Model.Hospital.Email" class="form-control form-control-sm" placeholder="Email" /></div>
+                        <div class="col-md-2"><button type="submit" class="btn btn-sm btn-primary w-100">Lưu Bệnh viện</button></div>
+                        <div class="col-12"><input name="address" value="@Model.Hospital.Address" class="form-control form-control-sm" placeholder="Địa chỉ" /></div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="col-lg-6">
+            <div class="sh-card p-3 mb-3">
+                <h6 class="fw-bold">Cơ sở (@Model.Facilities.Count)</h6>
+                <form asp-action="CreateFacility" method="post" class="row g-2 mb-3">
+                    <input type="hidden" name="hospitalId" value="@defaultHospitalId" />
+                    <div class="col-3"><input name="code" class="form-control form-control-sm" placeholder="Mã CS*" required /></div>
+                    <div class="col-5"><input name="name" class="form-control form-control-sm" placeholder="Tên cơ sở*" required /></div>
+                    <div class="col-4"><input name="phone" class="form-control form-control-sm" placeholder="SĐT" /></div>
+                    <div class="col-8"><input name="address" class="form-control form-control-sm" placeholder="Địa chỉ" /></div>
+                    <div class="col-4"><button class="btn btn-sm btn-primary w-100" type="submit">+ Thêm cơ sở</button></div>
+                </form>
+                @foreach (var f in Model.Facilities)
+                {
+                    <form asp-action="UpdateFacility" method="post" class="row g-1 align-items-center border-top py-2 small">
+                        <input type="hidden" name="id" value="@f.Id" />
+                        <input type="hidden" name="isDefault" value="@f.IsDefault.ToString().ToLowerInvariant()" />
+                        <div class="col-2 fw-bold">@f.Code</div>
+                        <div class="col-4"><input name="name" value="@f.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2"><input name="phone" value="@f.Phone" class="form-control form-control-sm" /></div>
+                        <div class="col-2">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@f.IsActive">Hoạt động</option>
+                                <option value="false" selected="@(!f.IsActive)">Ngừng</option>
+                            </select>
+                        </div>
+                        <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Chuyên khoa (@Model.Specialties.Count)</h6>
+                <form asp-action="CreateSpecialty" method="post" class="row g-2 mb-3">
+                    <div class="col-3"><input name="code" class="form-control form-control-sm" placeholder="Mã CK*" required /></div>
+                    <div class="col-6"><input name="name" class="form-control form-control-sm" placeholder="Tên chuyên khoa*" required /></div>
+                    <div class="col-3"><button class="btn btn-sm btn-primary w-100" type="submit">+ Thêm CK</button></div>
+                </form>
+                @foreach (var s in Model.Specialties)
+                {
+                    <form asp-action="UpdateSpecialty" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@s.Id" />
+                        <div class="col-2 fw-bold">@s.Code</div>
+                        <div class="col-4"><input name="name" value="@s.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2"><input name="description" value="@s.Description" class="form-control form-control-sm" placeholder="Mô tả" /></div>
+                        <div class="col-2">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@s.IsActive">Bật</option>
+                                <option value="false" selected="@(!s.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Khoa / Phòng (@Model.Departments.Count)</h6>
+                <form asp-action="CreateDepartment" method="post" class="row g-2 mb-3">
+                    <input type="hidden" name="facilityId" value="@defaultFacId" />
+                    <div class="col-3"><input name="code" class="form-control form-control-sm" placeholder="Mã*" required /></div>
+                    <div class="col-5"><input name="name" class="form-control form-control-sm" placeholder="Tên khoa/phòng*" required /></div>
+                    <div class="col-4"><select name="departmentType" class="form-select form-select-sm" asp-items="Html.GetEnumSelectList<DepartmentType>()"></select></div>
+                    <div class="col-8"><input name="location" class="form-control form-control-sm" placeholder="Vị trí (Tầng...)" /></div>
+                    <div class="col-4"><button class="btn btn-sm btn-primary w-100" type="submit">+ Thêm khoa</button></div>
+                </form>
+                @foreach (var d in Model.Departments)
+                {
+                    <form asp-action="UpdateDepartment" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@d.Id" />
+                        <div class="col-2 fw-bold">@d.Code</div>
+                        <div class="col-3"><input name="name" value="@d.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-3">
+                            <select name="departmentType" class="form-select form-select-sm">
+                                @foreach (DepartmentType dt in Enum.GetValues(typeof(DepartmentType)))
+                                {
+                                    <option value="@dt" selected="@(d.DepartmentType == dt)">@dt</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-2">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@d.IsActive">Bật</option>
+                                <option value="false" selected="@(!d.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+}
+else if (tab == "rooms")
+{
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="sh-card p-3 mb-3">
+                <h6 class="fw-bold">Giường bệnh (@Model.Beds.Count)</h6>
+                <form asp-action="CreateBed" method="post" class="row g-2 mb-3">
+                    <input type="hidden" name="facilityId" value="@defaultFacId" />
+                    <div class="col-md-4">
+                        <select name="roomId" class="form-select form-select-sm" required>
+                            @foreach (var r in Model.Rooms.Where(x => x.IsActive)) { <option value="@r.Id">@r.Code - @r.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-2"><input name="code" class="form-control form-control-sm" placeholder="Mã*" required /></div>
+                    <div class="col-md-3"><input name="name" class="form-control form-control-sm" placeholder="Tên giường*" required /></div>
+                    <div class="col-md-3"><input name="dailyRate" type="number" min="0" step="1000" value="450000" class="form-control form-control-sm" required /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">+ Thêm giường bệnh</button></div>
+                </form>
+                @foreach (var b in Model.Beds)
+                {
+                    <form asp-action="UpdateBed" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@b.Id" />
+                        <div class="col-2 fw-bold">@b.Code</div>
+                        <div class="col-2"><input name="name" value="@b.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2">
+                            <select name="roomId" class="form-select form-select-sm">
+                                @foreach (var r in Model.Rooms) { <option value="@r.Id" selected="@(r.Id == b.RoomId)">@r.Code</option> }
+                            </select>
+                        </div>
+                        <div class="col-2"><input name="dailyRate" type="number" step="1000" value="@b.DailyRate" class="form-control form-control-sm" /></div>
+                        <div class="col-2">
+                            <select name="status" class="form-select form-select-sm">
+                                @foreach (BedStatus st in Enum.GetValues(typeof(BedStatus)))
+                                {
+                                    <option value="@st" selected="@(b.Status == st)">@st</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-1">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@b.IsActive">Bật</option>
+                                <option value="false" selected="@(!b.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="sh-card p-3 mb-3">
+                <h6 class="fw-bold">Phòng (@Model.Rooms.Count)</h6>
+                <form asp-action="CreateRoom" method="post" class="row g-2 mb-3">
+                    <input type="hidden" name="facilityId" value="@defaultFacId" />
+                    <div class="col-md-4">
+                        <select name="departmentId" class="form-select form-select-sm" required>
+                            @foreach (var d in Model.Departments.Where(x => x.IsActive)) { <option value="@d.Id">@d.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-2"><input name="code" class="form-control form-control-sm" placeholder="Mã*" required /></div>
+                    <div class="col-md-3"><input name="name" class="form-control form-control-sm" placeholder="Tên phòng*" required /></div>
+                    <div class="col-md-3"><select name="roomType" class="form-select form-select-sm" asp-items="Html.GetEnumSelectList<RoomType>()"></select></div>
+                    <div class="col-md-8"><input name="floor" class="form-control form-control-sm" placeholder="Tầng" /></div>
+                    <div class="col-md-4"><button class="btn btn-sm btn-primary w-100" type="submit">+ Thêm phòng</button></div>
+                </form>
+                @foreach (var r in Model.Rooms)
+                {
+                    <form asp-action="UpdateRoom" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@r.Id" />
+                        <div class="col-2 fw-bold">@r.Code</div>
+                        <div class="col-3"><input name="name" value="@r.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2">
+                            <select name="departmentId" class="form-select form-select-sm">
+                                @foreach (var d in Model.Departments) { <option value="@d.Id" selected="@(d.Id == r.DepartmentId)">@d.Code</option> }
+                            </select>
+                        </div>
+                        <div class="col-2">
+                            <select name="roomType" class="form-select form-select-sm">
+                                @foreach (RoomType rt in Enum.GetValues(typeof(RoomType))) { <option value="@rt" selected="@(r.RoomType == rt)">@rt</option> }
+                            </select>
+                        </div>
+                        <div class="col-2">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@r.IsActive">Bật</option>
+                                <option value="false" selected="@(!r.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Phòng khám (@Model.Clinics.Count)</h6>
+                <form asp-action="CreateClinic" method="post" class="row g-2 mb-3">
+                    <input type="hidden" name="facilityId" value="@defaultFacId" />
+                    <div class="col-3"><input name="code" class="form-control form-control-sm" placeholder="Mã PK*" required /></div>
+                    <div class="col-4"><input name="name" class="form-control form-control-sm" placeholder="Tên PK*" required /></div>
+                    <div class="col-2"><input name="queuePrefix" class="form-control form-control-sm" placeholder="STT" value="K" required /></div>
+                    <div class="col-3">
+                        <select name="departmentId" class="form-select form-select-sm">
+                            @foreach (var d in Model.Departments.Where(x => x.IsActive)) { <option value="@d.Id">@d.Code</option> }
+                        </select>
+                    </div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">+ Thêm phòng khám</button></div>
+                </form>
+                @foreach (var c in Model.Clinics)
+                {
+                    <form asp-action="UpdateClinic" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@c.Id" />
+                        <input type="hidden" name="departmentId" value="@c.DepartmentId" />
+                        <div class="col-2 fw-bold">@c.Code</div>
+                        <div class="col-5"><input name="name" value="@c.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2"><input name="queuePrefix" value="@c.QueuePrefix" class="form-control form-control-sm" required /></div>
+                        <div class="col-2">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@c.IsActive">Bật</option>
+                                <option value="false" selected="@(!c.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+}
+else if (tab == "services")
+{
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="sh-card p-3 mb-3">
+                <h6 class="fw-bold">Dịch vụ khám &amp; Thủ thuật (@Model.Services.Count)</h6>
+                <form asp-action="CreateService" method="post" class="row g-2 mb-3">
+                    <div class="col-3"><input name="code" class="form-control form-control-sm" placeholder="Mã DV*" required /></div>
+                    <div class="col-4"><input name="name" class="form-control form-control-sm" placeholder="Tên dịch vụ*" required /></div>
+                    <div class="col-2"><input name="category" value="Khám bệnh" class="form-control form-control-sm" required /></div>
+                    <div class="col-3"><input name="defaultPrice" type="number" min="0" step="1000" class="form-control form-control-sm" placeholder="Giá VND*" required /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">+ Thêm dịch vụ</button></div>
+                </form>
+                @foreach (var s in Model.Services)
+                {
+                    <form asp-action="UpdateService" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@s.Id" />
+                        <div class="col-2 fw-bold">@s.Code</div>
+                        <div class="col-4"><input name="name" value="@s.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2"><input name="category" value="@s.Category" class="form-control form-control-sm" /></div>
+                        <div class="col-2"><input name="defaultPrice" type="number" step="1000" value="@s.DefaultPrice" class="form-control form-control-sm" /></div>
+                        <div class="col-1">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@s.IsActive">Bật</option>
+                                <option value="false" selected="@(!s.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="sh-card p-3 mb-3">
+                <h6 class="fw-bold">Bảng giá dịch vụ (@Model.PriceLists.Count)</h6>
+                <form asp-action="CreatePriceList" method="post" class="row g-2 mb-3">
+                    <div class="col-3"><input name="code" class="form-control form-control-sm" placeholder="Mã BG*" required /></div>
+                    <div class="col-4"><input name="name" class="form-control form-control-sm" placeholder="Tên bảng giá*" required /></div>
+                    <div class="col-3"><input name="effectiveFrom" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" class="form-control form-control-sm" required /></div>
+                    <div class="col-2"><button class="btn btn-sm btn-primary w-100" type="submit">+ Thêm</button></div>
+                </form>
+                @foreach (var pl in Model.PriceLists)
+                {
+                    <div class="border-top py-2 small">
+                        <strong>@pl.Code - @pl.Name</strong> (Hiệu lực: @pl.EffectiveFrom.ToString("dd/MM/yyyy"), @pl.Prices.Count mục giá)
+                        <form asp-action="UpsertServicePrice" method="post" class="row g-1 mt-1">
+                            <input type="hidden" name="priceListId" value="@pl.Id" />
+                            <input type="hidden" name="itemType" value="Service" />
+                            <div class="col-6">
+                                <select name="itemId" class="form-select form-select-sm">
+                                    @foreach (var s in Model.Services) { <option value="@s.Id">@s.Code - @s.Name</option> }
+                                </select>
+                            </div>
+                            <div class="col-4"><input name="unitPrice" type="number" step="1000" class="form-control form-control-sm" placeholder="Giá áp dụng" required /></div>
+                            <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Áp giá</button></div>
+                        </form>
+                    </div>
+                }
+            </div>
+
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Danh mục ICD-10 (@Model.Diagnoses.Count)</h6>
+                <form asp-action="CreateDiagnosis" method="post" class="row g-2 mb-3">
+                    <div class="col-3"><input name="icdCode" class="form-control form-control-sm" placeholder="Mã ICD*" required /></div>
+                    <div class="col-5"><input name="name" class="form-control form-control-sm" placeholder="Tên bệnh*" required /></div>
+                    <div class="col-2"><input name="chapter" class="form-control form-control-sm" placeholder="Nhóm" /></div>
+                    <div class="col-2"><button class="btn btn-sm btn-primary w-100" type="submit">+</button></div>
+                </form>
+                @foreach (var d in Model.Diagnoses)
+                {
+                    <form asp-action="UpdateDiagnosis" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@d.Id" />
+                        <div class="col-2 fw-bold">@d.IcdCode</div>
+                        <div class="col-5"><input name="name" value="@d.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2"><input name="chapter" value="@d.Chapter" class="form-control form-control-sm" /></div>
+                        <div class="col-2">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@d.IsActive">Bật</option>
+                                <option value="false" selected="@(!d.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+}
+else if (tab == "clinical")
+{
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Danh mục Xét nghiệm (@Model.LabTests.Count)</h6>
+                <form asp-action="CreateLabTest" method="post" class="row g-2 mb-3">
+                    <div class="col-2"><input name="code" class="form-control form-control-sm" placeholder="Mã*" required /></div>
+                    <div class="col-4"><input name="name" class="form-control form-control-sm" placeholder="Tên XN*" required /></div>
+                    <div class="col-3"><input name="category" value="Sinh hóa" class="form-control form-control-sm" required /></div>
+                    <div class="col-3"><input name="specimenType" value="Huyết thanh" class="form-control form-control-sm" required /></div>
+                    <div class="col-2"><input name="unit" class="form-control form-control-sm" placeholder="Đơn vị" /></div>
+                    <div class="col-4"><input name="refText" class="form-control form-control-sm" placeholder="Tham chiếu (VD: 3.9 - 6.4)" /></div>
+                    <div class="col-2"><input name="refMin" type="number" step="0.01" class="form-control form-control-sm" placeholder="Min" /></div>
+                    <div class="col-2"><input name="refMax" type="number" step="0.01" class="form-control form-control-sm" placeholder="Max" /></div>
+                    <div class="col-2"><input name="defaultPrice" type="number" step="1000" value="80000" class="form-control form-control-sm" required /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">+ Thêm xét nghiệm</button></div>
+                </form>
+                @foreach (var t in Model.LabTests)
+                {
+                    <form asp-action="UpdateLabTest" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <input type="hidden" name="category" value="@t.Category" />
+                        <input type="hidden" name="specimenType" value="@t.SpecimenType" />
+                        <input type="hidden" name="unit" value="@t.Unit" />
+                        <input type="hidden" name="refMin" value="@t.ReferenceMin" />
+                        <input type="hidden" name="refMax" value="@t.ReferenceMax" />
+                        <div class="col-2 fw-bold">@t.Code</div>
+                        <div class="col-4"><input name="name" value="@t.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2"><input name="refText" value="@t.ReferenceRangeText" class="form-control form-control-sm" /></div>
+                        <div class="col-2"><input name="defaultPrice" type="number" step="1000" value="@t.DefaultPrice" class="form-control form-control-sm" /></div>
+                        <div class="col-1">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@t.IsActive">Bật</option>
+                                <option value="false" selected="@(!t.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Danh mục CĐHA (@Model.ImagingServices.Count)</h6>
+                <form asp-action="CreateImagingService" method="post" class="row g-2 mb-3">
+                    <div class="col-3"><input name="code" class="form-control form-control-sm" placeholder="Mã*" required /></div>
+                    <div class="col-4"><input name="name" class="form-control form-control-sm" placeholder="Tên CĐHA*" required /></div>
+                    <div class="col-2"><input name="modality" value="X-Quang" class="form-control form-control-sm" required /></div>
+                    <div class="col-3"><input name="defaultPrice" type="number" step="1000" value="150000" class="form-control form-control-sm" required /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">+ Thêm dịch vụ CĐHA</button></div>
+                </form>
+                @foreach (var im in Model.ImagingServices)
+                {
+                    <form asp-action="UpdateImagingService" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@im.Id" />
+                        <div class="col-2 fw-bold">@im.Code</div>
+                        <div class="col-4"><input name="name" value="@im.Name" class="form-control form-control-sm" required /></div>
+                        <div class="col-2"><input name="modality" value="@im.Modality" class="form-control form-control-sm" /></div>
+                        <div class="col-2"><input name="defaultPrice" type="number" step="1000" value="@im.DefaultPrice" class="form-control form-control-sm" /></div>
+                        <div class="col-1">
+                            <select name="isActive" class="form-select form-select-sm">
+                                <option value="true" selected="@im.IsActive">Bật</option>
+                                <option value="false" selected="@(!im.IsActive)">Tắt</option>
+                            </select>
+                        </div>
+                        <div class="col-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+}
+else if (tab == "pharmacy")
+{
+    <div class="sh-card p-3">
+        <h6 class="fw-bold">Danh mục Thuốc (@Model.Medicines.Count)</h6>
+        <form asp-action="CreateMedicine" method="post" class="row g-2 mb-3">
+            <div class="col-md-2"><input name="code" class="form-control form-control-sm" placeholder="Mã thuốc*" required /></div>
+            <div class="col-md-3"><input name="name" class="form-control form-control-sm" placeholder="Tên thuốc*" required /></div>
+            <div class="col-md-2"><input name="activeIngredient" class="form-control form-control-sm" placeholder="Hoạt chất*" required /></div>
+            <div class="col-md-1"><input name="strength" class="form-control form-control-sm" placeholder="Hàm lượng" /></div>
+            <div class="col-md-1"><input name="dosageForm" value="Viên nén" class="form-control form-control-sm" required /></div>
+            <div class="col-md-1"><input name="baseUnit" value="Viên" class="form-control form-control-sm" required /></div>
+            <div class="col-md-1"><input name="defaultRoute" value="Uống" class="form-control form-control-sm" required /></div>
+            <div class="col-md-1"><input name="defaultUnitPrice" type="number" step="100" value="2000" class="form-control form-control-sm" required /></div>
+            <input type="hidden" name="minStockLevel" value="20" />
+            <div class="col-md-3">
+                <div class="form-check mt-1">
+                    <input name="isControlledSubstance" type="checkbox" value="true" class="form-check-input" id="ctrlSub" />
+                    <label class="form-check-label small" for="ctrlSub">Thuốc kiểm soát đặc biệt</label>
+                </div>
+            </div>
+            <div class="col-md-3"><button class="btn btn-sm btn-primary" type="submit">+ Thêm thuốc</button></div>
+        </form>
+        @foreach (var m in Model.Medicines)
+        {
+            <form asp-action="UpdateMedicine" method="post" class="row g-1 align-items-center border-top py-1 small">
+                <input type="hidden" name="id" value="@m.Id" />
+                <input type="hidden" name="strength" value="@m.Strength" />
+                <input type="hidden" name="dosageForm" value="@m.DosageForm" />
+                <input type="hidden" name="defaultRoute" value="@m.DefaultRoute" />
+                <input type="hidden" name="minStockLevel" value="@m.MinStockLevel" />
+                <input type="hidden" name="isControlledSubstance" value="@m.IsControlledSubstance.ToString().ToLowerInvariant()" />
+                <div class="col-2 fw-bold">@m.Code</div>
+                <div class="col-3"><input name="name" value="@m.Name" class="form-control form-control-sm" required /></div>
+                <div class="col-2"><input name="activeIngredient" value="@m.ActiveIngredient" class="form-control form-control-sm" required /></div>
+                <div class="col-1"><input name="baseUnit" value="@m.BaseUnit" class="form-control form-control-sm" required /></div>
+                <div class="col-2"><input name="defaultUnitPrice" type="number" step="100" value="@m.DefaultUnitPrice" class="form-control form-control-sm" /></div>
+                <div class="col-1">
+                    <select name="isActive" class="form-select form-select-sm">
+                        <option value="true" selected="@m.IsActive">Bật</option>
+                        <option value="false" selected="@(!m.IsActive)">Tắt</option>
+                    </select>
+                </div>
+                <div class="col-1"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+            </form>
+        }
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Kho (@Model.Warehouses.Count)</h6>
+                <form asp-action="CreateWarehouse" method="post" class="row g-2 mb-3">
+                    <input type="hidden" name="facilityId" value="@defaultFacId" />
+                    <div class="col-4"><input name="code" class="form-control form-control-sm" placeholder="Mã kho*" required /></div>
+                    <div class="col-4"><input name="name" class="form-control form-control-sm" placeholder="Tên kho*" required /></div>
+                    <div class="col-4"><input name="warehouseType" value="Pharmacy" class="form-control form-control-sm" required /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary w-100" type="submit">+ Thêm kho</button></div>
+                </form>
+                @foreach (var w in Model.Warehouses)
+                {
+                    <form asp-action="UpdateWarehouse" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@w.Id" />
+                        <div class="col-3 fw-bold">@w.Code</div>
+                        <div class="col-4"><input name="name" value="@w.Name" class="form-control form-control-sm" /></div>
+                        <div class="col-3"><input name="warehouseType" value="@w.WarehouseType" class="form-control form-control-sm" /></div>
+                        <input type="hidden" name="isActive" value="true" />
+                        <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Nhà cung cấp (@Model.Suppliers.Count)</h6>
+                <form asp-action="CreateSupplier" method="post" class="row g-2 mb-3">
+                    <div class="col-4"><input name="code" class="form-control form-control-sm" placeholder="Mã NCC*" required /></div>
+                    <div class="col-5"><input name="name" class="form-control form-control-sm" placeholder="Tên NCC*" required /></div>
+                    <div class="col-3"><input name="phone" class="form-control form-control-sm" placeholder="SĐT" /></div>
+                    <div class="col-12"><button class="btn btn-sm btn-primary w-100" type="submit">+ Thêm NCC</button></div>
+                </form>
+                @foreach (var s in Model.Suppliers)
+                {
+                    <form asp-action="UpdateSupplier" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@s.Id" />
+                        <div class="col-3 fw-bold">@s.Code</div>
+                        <div class="col-5"><input name="name" value="@s.Name" class="form-control form-control-sm" /></div>
+                        <div class="col-2"><input name="phone" value="@s.Phone" class="form-control form-control-sm" /></div>
+                        <input type="hidden" name="isActive" value="true" />
+                        <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Vật tư y tế (@Model.InventoryItems.Count)</h6>
+                <form asp-action="CreateInventoryItem" method="post" class="row g-2 mb-3">
+                    <div class="col-4"><input name="code" class="form-control form-control-sm" placeholder="Mã VT*" required /></div>
+                    <div class="col-5"><input name="name" class="form-control form-control-sm" placeholder="Tên VT*" required /></div>
+                    <div class="col-3"><input name="unit" value="Cái" class="form-control form-control-sm" required /></div>
+                    <input type="hidden" name="category" value="Vật tư tiêu hao" />
+                    <input type="hidden" name="defaultUnitPrice" value="5000" />
+                    <input type="hidden" name="minStockLevel" value="20" />
+                    <input type="hidden" name="maxStockLevel" value="1000" />
+                    <div class="col-12"><button class="btn btn-sm btn-primary w-100" type="submit">+ Thêm vật tư</button></div>
+                </form>
+                @foreach (var it in Model.InventoryItems)
+                {
+                    <form asp-action="UpdateInventoryItem" method="post" class="row g-1 align-items-center border-top py-1 small">
+                        <input type="hidden" name="id" value="@it.Id" />
+                        <input type="hidden" name="category" value="@it.Category" />
+                        <input type="hidden" name="minStockLevel" value="@it.MinStockLevel" />
+                        <input type="hidden" name="maxStockLevel" value="@it.MaxStockLevel" />
+                        <input type="hidden" name="isActive" value="true" />
+                        <div class="col-3 fw-bold">@it.Code</div>
+                        <div class="col-4"><input name="name" value="@it.Name" class="form-control form-control-sm" /></div>
+                        <div class="col-3"><input name="defaultUnitPrice" type="number" value="@it.DefaultUnitPrice" class="form-control form-control-sm" /></div>
+                        <input type="hidden" name="unit" value="@it.Unit" />
+                        <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+}

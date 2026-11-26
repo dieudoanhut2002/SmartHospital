@@ -1,0 +1,68 @@
+@{
+    ViewData["Title"] = "Vật tư y tế, Sổ kho & Mua hàng";
+    var transactions = ViewBag.Transactions as IReadOnlyList<SmartHospital.Domain.Pharmacy.StockTransaction> ?? [];
+    var items = ViewBag.InventoryItems as IReadOnlyList<SmartHospital.Domain.Pharmacy.InventoryItem> ?? [];
+    var prs = ViewBag.PurchaseRequests as IReadOnlyList<SmartHospital.Domain.Pharmacy.PurchaseRequest> ?? [];
+    var warehouses = ViewBag.Warehouses as IReadOnlyList<SmartHospital.Domain.Pharmacy.Warehouse> ?? [];
+    var activeFacId = (Guid)(ViewBag.ActiveFacilityId ?? Guid.Empty);
+}
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold">Đề xuất mua hàng (MVP)</h6>
+            <form asp-action="CreatePurchaseRequest" method="post" class="row g-2 mb-3">
+                <input type="hidden" name="facilityId" value="@activeFacId" />
+                <div class="col-md-6">
+                    <select name="warehouseId" class="form-select form-select-sm">
+                        @foreach (var w in warehouses) { <option value="@w.Id">@w.Name</option> }
+                    </select>
+                </div>
+                <div class="col-md-6"><input name="estimatedTotal" type="number" class="form-control form-control-sm" placeholder="Dự toán VND" required /></div>
+                <div class="col-12"><input name="itemsSummary" class="form-control form-control-sm" placeholder="Danh sách thuốc/vật tư đề xuất..." required /></div>
+                <div class="col-12"><button type="submit" class="btn btn-sm btn-primary">+ Gửi đề xuất mua hàng</button></div>
+            </form>
+            <table class="table table-sm small mb-0 align-middle">
+                <thead><tr><th>Mã</th><th>Nội dung</th><th class="text-end">Dự toán</th><th>Trạng thái</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var p in prs)
+                    {
+                        <tr>
+                            <td>@p.RequestCode</td>
+                            <td>@p.ItemsSummary</td>
+                            <td class="text-end">@p.EstimatedTotal.ToString("N0") đ</td>
+                            <td><span class="badge bg-info text-dark">@p.Status</span></td>
+                            <td>
+                                <form asp-action="UpdatePurchaseRequestStatus" method="post" class="d-flex gap-1">
+                                    <input type="hidden" name="purchaseRequestId" value="@p.Id" />
+                                    <select name="status" class="form-select form-select-sm">
+                                        @foreach (PurchaseRequestStatus st in Enum.GetValues(typeof(PurchaseRequestStatus))) { <option value="@st" selected="@(p.Status == st)">@st</option> }
+                                    </select>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Lưu</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold">Sổ giao dịch kho gần đây</h6>
+            <table class="table table-sm small mb-0">
+                <thead><tr><th>Mã phiếu</th><th>Loại</th><th>Thời gian</th><th>Người lập</th></tr></thead>
+                <tbody>
+                    @foreach (var t in transactions)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@t.TransactionCode</td>
+                            <td>@t.TransactionType</td>
+                            <td>@HospitalTime.ToVietnamTime(t.TransactionDateUtc).ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@t.PerformedBy</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

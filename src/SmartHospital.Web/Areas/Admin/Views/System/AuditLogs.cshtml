@@ -1,0 +1,50 @@
+@model SmartHospital.Contracts.Common.PagedResult<SmartHospital.Application.Admin.AuditLogItemDto>
+@{
+    ViewData["Title"] = "Nhật ký Audit hệ thống (Chỉ đọc)";
+}
+
+<div class="mb-3 d-flex gap-2">
+    <a asp-action="AuditLogs" class="btn btn-sm btn-primary">Nhật ký Audit</a>
+    <a asp-action="Integrations" class="btn btn-sm btn-outline-primary">Thông điệp Tích hợp (Sandbox)</a>
+    <a asp-action="Settings" class="btn btn-sm btn-outline-primary">Cấu hình Hệ thống</a>
+    <a asp-action="Status" class="btn btn-sm btn-outline-primary">Trạng thái Kỹ thuật</a>
+</div>
+
+<div class="sh-card p-3">
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-4"><input name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Người thực hiện, EntityId, Lý do..." /></div>
+        <div class="col-md-3"><input name="entityType" value="@ViewBag.EntityType" class="form-control form-control-sm" placeholder="EntityType (Patient, Invoice...)" /></div>
+        <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Lọc</button></div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-hover small">
+            <thead class="table-light">
+                <tr>
+                    <th>Thời gian (UTC+7)</th>
+                    <th>Người thực hiện</th>
+                    <th>Hành động</th>
+                    <th>Đối tượng</th>
+                    <th>Lý do / Tóm tắt</th>
+                    <th>CorrelationId</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@HospitalTime.ToVietnamTime(item.CreatedAtUtc).ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td class="fw-semibold">@item.UserName</td>
+                        <td><span class="badge bg-secondary">@item.Action</span></td>
+                        <td>@item.EntityType <code>@item.EntityId</code></td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.Reason)) { <div><strong>Lý do:</strong> @item.Reason</div> }
+                            @if (!string.IsNullOrEmpty(item.AfterSummaryJson)) { <div class="text-muted text-truncate" style="max-width:340px;">@item.AfterSummaryJson</div> }
+                        </td>
+                        <td><code>@item.CorrelationId</code></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

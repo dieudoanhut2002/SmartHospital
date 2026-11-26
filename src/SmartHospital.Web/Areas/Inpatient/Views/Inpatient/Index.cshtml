@@ -1,0 +1,120 @@
+@{
+    ViewData["Title"] = "Nội trú & Sơ đồ giường bệnh";
+    var beds = ViewBag.BedBoard as IReadOnlyList<SmartHospital.Application.Inpatient.BedBoardItemDto> ?? [];
+    var admissions = ViewBag.Admissions as IReadOnlyList<SmartHospital.Application.Inpatient.AdmissionListItemDto> ?? [];
+    var pendingRequests = ViewBag.PendingRequests as IReadOnlyList<SmartHospital.Domain.Reception.AdmissionRequest> ?? [];
+    var availableBeds = beds.Where(b => b.Status == BedStatus.Available).ToList();
+}
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-8">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-3">Sơ đồ giường bệnh (@beds.Count giường)</h6>
+            <div class="row g-2">
+                @foreach (var b in beds)
+                {
+                    var cls = b.Status switch
+                    {
+                        BedStatus.Available => "bed-available",
+                        BedStatus.Occupied => "bed-occupied",
+                        BedStatus.Cleaning => "bed-cleaning",
+                        _ => "bed-maintenance"
+                    };
+                    <div class="col-md-4 col-lg-3">
+                        <div class="bed-tile @cls h-100">
+                            <div class="d-flex justify-content-between">
+                                <strong>@b.BedCode</strong>
+                                <span class="badge bg-light text-dark border">@b.Status</span>
+                            </div>
+                            <div class="small text-muted">@b.RoomName (@b.DepartmentName)</div>
+                            @if (b.ActiveAdmissionId.HasValue)
+                            {
+                                <div class="small fw-semibold text-danger mt-1">@b.PatientCode - @b.PatientName</div>
+                            }
+                            @if (b.Status == BedStatus.Cleaning)
+                            {
+                                <form asp-action="UpdateBedStatus" method="post" class="mt-2">
+                                    <input type="hidden" name="bedId" value="@b.BedId" />
+                                    <input type="hidden" name="newStatus" value="@BedStatus.Available" />
+                                    <input type="hidden" name="reason" value="Hoàn tất vệ sinh giường" />
+                                    <button type="submit" class="btn btn-sm btn-outline-success py-0">Sẵn sàng</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-2">Yêu cầu nhập viện chờ phân giường (@pendingRequests.Count)</h6>
+            @if (pendingRequests.Count == 0)
+            {
+                <p class="small text-muted mb-0">Không có yêu cầu chờ.</p>
+            }
+            @foreach (var req in pendingRequests)
+            {
+                <div class="border rounded p-2 mb-2 small">
+                    <div><strong>@req.RequestCode</strong> — @req.Reason</div>
+                    <form asp-action="AdmitFromRequest" method="post" class="d-flex gap-2 mt-2">
+                        <input type="hidden" name="admissionRequestId" value="@req.Id" />
+                        <select name="bedId" class="form-select form-select-sm" required>
+                            @foreach (var ab in availableBeds)
+                            {
+                                <option value="@ab.BedId">@ab.BedCode (@ab.RoomName)</option>
+                            }
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary text-nowrap">Nhập viện</button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="sh-card p-3">
+    <h6 class="fw-bold mb-3">Danh sách bệnh nhân đang điều trị nội trú (@admissions.Count)</h6>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle small">
+            <thead class="table-light">
+                <tr><th>Mã đợt ĐT</th><th>Bệnh nhân</th><th>Khoa</th><th>Giường</th><th>Ngày vào</th><th class="text-end">Thao tác</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var a in admissions)
+                {
+                    <tr>
+                        <td class="fw-semibold">@a.AdmissionCode</td>
+                        <td>@a.PatientCode - @a.PatientName</td>
+                        <td>@a.DepartmentName</td>
+                        <td><span class="badge bg-danger">@a.CurrentBedCode</span></td>
+                        <td>@HospitalTime.ToVietnamTime(a.AdmittedAtUtc).ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2 flex-wrap">
+                                <a asp-controller="Nursing" asp-action="Index" asp-route-admissionId="@a.AdmissionId" class="btn btn-sm btn-outline-primary">Chăm sóc ĐD</a>
+                                @if (availableBeds.Count > 0)
+                                {
+                                    <form asp-action="TransferBed" method="post" class="d-flex gap-1">
+                                        <input type="hidden" name="admissionId" value="@a.AdmissionId" />
+                                        <input type="hidden" name="reason" value="Điều chuyển giường theo chỉ định" />
+                                        <select name="newBedId" class="form-select form-select-sm" style="width:110px;">
+                                            @foreach (var ab in availableBeds) { <option value="@ab.BedId">@ab.BedCode</option> }
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-warning">Chuyển giường</button>
+                                    </form>
+                                }
+                                <form asp-action="Discharge" method="post" class="d-flex gap-1">
+                                    <input type="hidden" name="admissionId" value="@a.AdmissionId" />
+                                    <input name="dischargeSummary" class="form-control form-control-sm" placeholder="Tóm tắt ra viện*" style="width:160px;" required />
+                                    <button type="submit" class="btn btn-sm btn-success">Xuất viện</button>
+                                </form>
+                                <a asp-area="" asp-controller="Print" asp-action="DischargeSummary" asp-route-admissionId="@a.AdmissionId" target="_blank" class="btn btn-sm btn-outline-secondary">In</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

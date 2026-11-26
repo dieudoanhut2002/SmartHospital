@@ -1,0 +1,83 @@
+@{
+    ViewData["Title"] = "Tạo hồ sơ bệnh nhân mới";
+    var duplicates = ViewBag.DuplicateCandidates as IReadOnlyList<SmartHospital.Contracts.Patients.PatientDuplicateCandidateDto> ?? [];
+    var f = ViewBag.FormData as SmartHospital.Application.Patients.CreateOrUpdatePatientRequest;
+}
+
+@if (duplicates.Count > 0)
+{
+    <div class="alert alert-warning">
+        <h6 class="fw-bold">Phát hiện hồ sơ tương tự có khả năng trùng lặp:</h6>
+        <ul class="mb-2">
+            @foreach (var d in duplicates)
+            {
+                <li>
+                    <strong>@d.PatientCode - @d.FullName</strong> (NS: @d.DateOfBirth?.ToString("dd/MM/yyyy"), SĐT: @d.PhoneNumber, CCCD: @d.NationalId) — <span class="text-danger">@d.MatchReason</span>
+                    <a asp-action="Detail" asp-route-id="@d.Id" class="ms-2">Mở hồ sơ này</a>
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+<div class="sh-card p-4">
+    <form asp-action="Create" method="post">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label">Họ và tên *</label>
+                <input name="fullName" value="@f?.FullName" class="form-control" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Ngày sinh</label>
+                <input name="dateOfBirth" value="@f?.DateOfBirth?.ToString("yyyy-MM-dd")" type="date" class="form-control" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Giới tính</label>
+                <select name="gender" class="form-select" asp-items="Html.GetEnumSelectList<Gender>()"></select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Nhóm máu</label>
+                <input name="bloodType" value="@f?.BloodType" class="form-control" placeholder="O+, A+..." />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Số điện thoại</label>
+                <input name="phoneNumber" value="@f?.PhoneNumber" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Số CCCD / Giấy tờ định danh</label>
+                <input name="nationalId" value="@f?.NationalId" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Email</label>
+                <input name="email" value="@f?.Email" type="email" class="form-control" />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Địa chỉ liên hệ</label>
+                <input name="address" value="@f?.Address" class="form-control" />
+            </div>
+
+            <div class="col-12"><hr class="my-1" /><h6 class="fw-semibold">Người liên hệ khẩn cấp</h6></div>
+            <div class="col-md-4"><input name="emergencyContactName" value="@f?.EmergencyContactName" class="form-control" placeholder="Họ tên người đại diện" /></div>
+            <div class="col-md-4"><input name="emergencyContactRelationship" value="@f?.EmergencyContactRelationship" class="form-control" placeholder="Quan hệ (Vợ/Chồng/Con...)" /></div>
+            <div class="col-md-4"><input name="emergencyContactPhone" value="@f?.EmergencyContactPhone" class="form-control" placeholder="Số điện thoại khẩn cấp" /></div>
+
+            <div class="col-12">
+                <div class="form-check">
+                    <input name="requiresVerification" type="checkbox" value="true" class="form-check-input" checked="@(f?.RequiresVerification ?? false)" />
+                    <label class="form-check-label">Gắn cờ hồ sơ cần xác minh danh tính</label>
+                </div>
+                @if (duplicates.Count > 0)
+                {
+                    <div class="form-check mt-2">
+                        <input name="confirmDuplicateOverride" type="checkbox" value="true" class="form-check-input" id="dupConfirm" />
+                        <label class="form-check-label text-danger fw-semibold" for="dupConfirm">Tôi đã kiểm tra và xác nhận đây là bệnh nhân khác, vẫn tạo hồ sơ mới</label>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Lưu hồ sơ bệnh nhân</button>
+            <a asp-action="Index" class="btn btn-outline-secondary ms-2">Hủy</a>
+        </div>
+    </form>
+</div>

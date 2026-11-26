@@ -1,0 +1,278 @@
+@model SmartHospital.Application.Clinical.EncounterWorkspaceDto
+@{
+    ViewData["Title"] = $"Khám bệnh: {Model.Encounter.EncounterCode}";
+    var services = ViewBag.Services as IReadOnlyList<SmartHospital.Domain.Billing.ServiceCatalog> ?? [];
+    var labTests = ViewBag.LabTests as IReadOnlyList<SmartHospital.Domain.Laboratory.LabTest> ?? [];
+    var imagingServices = ViewBag.ImagingServices as IReadOnlyList<SmartHospital.Domain.Laboratory.ImagingService> ?? [];
+    var medicines = ViewBag.Medicines as IReadOnlyList<SmartHospital.Domain.Pharmacy.Medicine> ?? [];
+    var icds = ViewBag.IcdDiagnoses as IReadOnlyList<SmartHospital.Domain.Clinical.Diagnosis> ?? [];
+    var depts = ViewBag.Departments as IReadOnlyList<SmartHospital.Domain.Organization.Department> ?? [];
+    var note = Model.ClinicalNote;
+    var isSigned = note is not null && note.Status != ClinicalNoteStatus.Draft;
+}
+
+<div class="sh-card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold mb-1">@Model.Patient.FullName <span class="badge bg-secondary">@Model.Patient.PatientCode</span></h5>
+            <div class="small text-muted">
+                Lượt khám: <strong>@Model.Encounter.EncounterCode</strong> | Khoa: @Model.DepartmentName @(Model.ClinicName != null ? $"({Model.ClinicName})" : "") |
+                Trạng thái: <span class="badge bg-primary">@Model.Encounter.Status</span>
+            </div>
+            @if (Model.Patient.Allergies.Count > 0)
+            {
+                <div class="mt-1">
+                    @foreach (var al in Model.Patient.Allergies)
+                    {
+                        <span class="badge bg-danger me-1">Dị ứng: @al.Allergen (@al.Severity)</span>
+                    }
+                </div>
+            }
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-area="" asp-controller="Print" asp-action="ClinicalSummary" asp-route-encounterId="@Model.Encounter.Id" target="_blank" class="btn btn-sm btn-outline-secondary">In phiếu khám</a>
+            <a asp-area="Billing" asp-controller="Billing" asp-action="CreateInvoice" asp-route-patientId="@Model.Patient.Id" asp-route-encounterId="@Model.Encounter.Id" class="btn btn-sm btn-outline-success">Tổng hợp viện phí</a>
+            @if (Model.Encounter.Status != EncounterStatus.Completed)
+            {
+                <form asp-action="CompleteEncounter" method="post" class="d-inline">
+                    <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                    <button type="submit" class="btn btn-sm btn-success">Hoàn tất lượt khám</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <!-- Sinh hiệu -->
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold">Chỉ số sinh hiệu</h6>
+            <form asp-action="RecordVitalSign" method="post" class="row g-2 mb-2">
+                <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                <div class="col-3 col-md-2"><input name="systolicBp" type="number" class="form-control form-control-sm" placeholder="HA Tâm thu" /></div>
+                <div class="col-3 col-md-2"><input name="diastolicBp" type="number" class="form-control form-control-sm" placeholder="HA Tâm trương" /></div>
+                <div class="col-3 col-md-2"><input name="heartRate" type="number" class="form-control form-control-sm" placeholder="Mạch" /></div>
+                <div class="col-3 col-md-2"><input name="temperatureC" type="number" step="0.1" class="form-control form-control-sm" placeholder="Nhiệt độ" /></div>
+                <div class="col-3 col-md-2"><input name="spO2" type="number" class="form-control form-control-sm" placeholder="SpO2 %" /></div>
+                <div class="col-3 col-md-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Sinh hiệu</button></div>
+            </form>
+            @if (Model.VitalSigns.Count > 0)
+            {
+                var v = Model.VitalSigns[0];
+                <div class="small text-muted">Mới nhất (@HospitalTime.ToVietnamTime(v.RecordedAtUtc).ToString("HH:mm")): HA @v.SystolicBp/@v.DiastolicBp mmHg | Mạch @v.HeartRate | Nhiệt @v.TemperatureC°C | SpO2 @v.SpO2%</div>
+            }
+        </div>
+
+        <!-- Phiếu khám bệnh án -->
+        <div class="sh-card p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold mb-0">Bệnh án / Phiếu khám lâm sàng</h6>
+                @if (note != null)
+                {
+                    <span class="badge @(isSigned ? "bg-success" : "bg-warning text-dark")">
+                        @note.Status (Phiên bản @note.CurrentVersion)
+                    </span>
+                }
+            </div>
+
+            <form asp-action="@(isSigned ? "AmendNote" : "SaveNoteDraft")" method="post">
+                <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label small">Lý do đến khám</label>
+                        <input name="chiefComplaint" value="@(note?.ChiefComplaint ?? Model.Encounter.ChiefComplaint)" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Chẩn đoán sơ bộ</label>
+                        <input name="preliminaryDiagnosis" value="@note?.PreliminaryDiagnosis" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">Bệnh sử &amp; Khám lâm sàng</label>
+                        <textarea name="physicalExam" rows="2" class="form-control form-control-sm">@note?.PhysicalExam</textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Chẩn đoán xác định</label>
+                        <input name="finalDiagnosis" value="@note?.FinalDiagnosis" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Ngày tái khám</label>
+                        <input name="followUpDate" type="date" value="@note?.FollowUpDate?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">Hướng điều trị &amp; Dặn dò</label>
+                        <textarea name="treatmentPlan" rows="2" class="form-control form-control-sm">@note?.TreatmentPlan</textarea>
+                    </div>
+                    @if (isSigned)
+                    {
+                        <div class="col-12">
+                            <label class="form-label small text-danger fw-semibold">Lý do bổ sung/đính chính (bắt buộc vì hồ sơ đã ký) *</label>
+                            <input name="amendmentReason" class="form-control form-control-sm" required placeholder="Nhập lý do đính chính..." />
+                        </div>
+                    }
+                </div>
+                <div class="mt-2 d-flex gap-2">
+                    @if (!isSigned)
+                    {
+                        <button type="submit" class="btn btn-sm btn-primary">Lưu nháp phiếu khám</button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-sm btn-warning">Lưu bản đính chính (Version mới)</button>
+                    }
+                </div>
+            </form>
+
+            @if (note != null && !isSigned)
+            {
+                <form asp-action="SignNote" method="post" class="mt-2">
+                    <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                    <button type="submit" class="btn btn-sm btn-success">Ký &amp; Khóa phiên bản phiếu khám</button>
+                </form>
+            }
+
+            @if (Model.NoteVersions.Count > 0)
+            {
+                <div class="mt-2 small text-muted">
+                    Lịch sử phiên bản:
+                    @foreach (var ver in Model.NoteVersions)
+                    {
+                        <div>v.@ver.VersionNumber (@ver.ChangeType) bởi @ver.RecordedBy lúc @HospitalTime.ToVietnamTime(ver.RecordedAtUtc).ToString("dd/MM/yyyy HH:mm") @(ver.AmendmentReason != null ? $"— Lý do: {ver.AmendmentReason}" : "")</div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Kê đơn thuốc -->
+        <div class="sh-card p-3">
+            <h6 class="fw-bold">Kê đơn thuốc</h6>
+            <form asp-action="CreatePrescription" method="post" class="row g-2 mb-3">
+                <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                <div class="col-md-5">
+                    <select name="medicineId" class="form-select form-select-sm" required>
+                        @foreach (var m in medicines)
+                        {
+                            <option value="@m.Id">@m.Name (@m.BaseUnit)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4"><input name="dosageInstruction" class="form-control form-control-sm" value="Sáng 1 viên, Tối 1 viên sau ăn" required /></div>
+                <div class="col-md-2"><input name="quantityPrescribed" type="number" step="1" min="1" value="10" class="form-control form-control-sm" required /></div>
+                <input type="hidden" name="route" value="Uống" />
+                <input type="hidden" name="durationDays" value="5" />
+                <div class="col-md-1"><button type="submit" class="btn btn-sm btn-primary w-100">+</button></div>
+            </form>
+            @foreach (var rx in Model.Prescriptions)
+            {
+                <div class="border rounded p-2 mb-2 small">
+                    <div class="d-flex justify-content-between">
+                        <strong>@rx.PrescriptionCode (@rx.Status)</strong>
+                        <a asp-area="" asp-controller="Print" asp-action="Prescription" asp-route-prescriptionId="@rx.Id" target="_blank">In đơn thuốc</a>
+                    </div>
+                    <ul class="mb-0 ps-3">
+                        @foreach (var item in rx.Items)
+                        {
+                            <li>@item.MedicineName — SL: @item.QuantityPrescribed @item.UnitName (@item.DosageInstruction)</li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <!-- Chỉ định Xét nghiệm -->
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold">Chỉ định Xét nghiệm (LIS)</h6>
+            <form asp-action="CreateLabOrder" method="post">
+                <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                <div class="border rounded p-2 mb-2" style="max-height: 150px; overflow-y: auto;">
+                    @foreach (var t in labTests)
+                    {
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="labTestIds" value="@t.Id" />
+                            <label class="form-check-label small">@t.Code - @t.Name (@t.DefaultPrice.ToString("N0") đ)</label>
+                        </div>
+                    }
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Gửi chỉ định xét nghiệm</button>
+            </form>
+            @foreach (var lo in Model.LabOrders)
+            {
+                <div class="border rounded p-2 mt-2 small">
+                    <div class="d-flex justify-content-between">
+                        <strong>@lo.OrderCode</strong>
+                        <span class="badge bg-info text-dark">@lo.Status</span>
+                    </div>
+                    @foreach (var li in lo.Items)
+                    {
+                        <div>
+                            • @li.TestName:
+                            @if (li.Result != null)
+                            {
+                                <strong class="@(li.Result.IsAbnormal ? "text-danger" : "text-success")">@li.Result.ResultValue @li.Result.Unit</strong>
+                                @(li.Result.IsVerified ? "[Đã duyệt]" : "[Chờ duyệt]")
+                            }
+                            else { <span class="text-muted">Chưa có kết quả</span> }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Chỉ định CĐHA & Dịch vụ -->
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold">Chỉ định Chẩn đoán hình ảnh &amp; Dịch vụ</h6>
+            <form asp-action="CreateImagingOrder" method="post" class="d-flex gap-2 mb-2">
+                <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                <select name="imagingServiceId" class="form-select form-select-sm">
+                    @foreach (var im in imagingServices)
+                    {
+                        <option value="@im.Id">@im.Modality - @im.Name</option>
+                    }
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">+ CĐHA</button>
+            </form>
+            @foreach (var io in Model.ImagingOrders)
+            {
+                <div class="small border rounded p-2 mb-2">
+                    <strong>@io.OrderCode - @io.ServiceName</strong> (@io.Status)
+                    @if (io.Report != null)
+                    {
+                        <div class="text-muted">Kết luận: @io.Report.Conclusion</div>
+                    }
+                </div>
+            }
+
+            <form asp-action="CreateServiceOrder" method="post" class="d-flex gap-2 mt-2">
+                <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                <input type="hidden" name="quantity" value="1" />
+                <select name="serviceCatalogId" class="form-select form-select-sm">
+                    @foreach (var sv in services)
+                    {
+                        <option value="@sv.Id">@sv.Name (@sv.DefaultPrice.ToString("N0") đ)</option>
+                    }
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">+ Dịch vụ</button>
+            </form>
+        </div>
+
+        <!-- Nhập viện -->
+        <div class="sh-card p-3">
+            <h6 class="fw-bold">Chỉ định nhập viện nội trú</h6>
+            <form asp-action="RequestAdmission" method="post" class="row g-2">
+                <input type="hidden" name="encounterId" value="@Model.Encounter.Id" />
+                <div class="col-12">
+                    <select name="targetDepartmentId" class="form-select form-select-sm">
+                        @foreach (var d in depts.Where(x => x.DepartmentType == DepartmentType.ClinicalInpatient || x.DepartmentType == DepartmentType.Surgery))
+                        {
+                            <option value="@d.Id">@d.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-12"><input name="reason" class="form-control form-control-sm" placeholder="Lý do nhập viện..." required /></div>
+                <div class="col-12"><button type="submit" class="btn btn-sm btn-outline-danger">Tạo phiếu chỉ định nhập viện</button></div>
+            </form>
+        </div>
+    </div>
+</div>

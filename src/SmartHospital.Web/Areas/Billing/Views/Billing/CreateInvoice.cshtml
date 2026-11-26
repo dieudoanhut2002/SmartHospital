@@ -1,0 +1,61 @@
+@model SmartHospital.Application.Billing.UnbilledChargesPreviewDto
+@{
+    ViewData["Title"] = $"Tổng hợp chi phí: {Model.PatientCode}";
+    var activeFacId = (Guid)(ViewBag.ActiveFacilityId ?? Guid.Empty);
+    var encounters = ViewBag.Encounters as IReadOnlyList<SmartHospital.Domain.Reception.Encounter> ?? [];
+}
+
+<div class="sh-card p-4">
+    <h5 class="fw-bold mb-1">Bảng kê khoản thu chưa lập hóa đơn — @Model.PatientName (@Model.PatientCode)</h5>
+    <form method="get" class="d-flex gap-2 align-items-center my-3">
+        <input type="hidden" name="patientId" value="@Model.PatientId" />
+        <label class="small">Lọc theo lượt khám:</label>
+        <select name="encounterId" class="form-select form-select-sm" style="max-width:300px;" onchange="this.form.submit()">
+            <option value="">-- Tất cả khoản chưa lập HĐ --</option>
+            @foreach (var e in encounters)
+            {
+                <option value="@e.Id" selected="@(Model.EncounterId == e.Id)">@e.EncounterCode (@HospitalTime.ToVietnamTime(e.StartedAtUtc).ToString("dd/MM/yyyy"))</option>
+            }
+        </select>
+    </form>
+
+    @if (Model.Lines.Count == 0)
+    {
+        <div class="alert alert-info">Hiện không có khoản phát sinh nào chưa lập hóa đơn.</div>
+    }
+    else
+    {
+        <table class="table table-sm">
+            <thead class="table-light"><tr><th>Nguồn</th><th>Mã</th><th>Diễn giải</th><th class="text-end">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr></thead>
+            <tbody>
+                @foreach (var l in Model.Lines)
+                {
+                    <tr>
+                        <td>@l.SourceType</td><td>@l.ItemCode</td><td>@l.Description</td>
+                        <td class="text-end">@l.Quantity</td><td class="text-end">@l.UnitPrice.ToString("N0") đ</td><td class="text-end fw-semibold">@l.LineTotal.ToString("N0") đ</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr><th colspan="5" class="text-end">Tổng cộng:</th><th class="text-end text-primary fs-5">@Model.TotalAmount.ToString("N0") đ</th></tr>
+            </tfoot>
+        </table>
+
+        <form asp-action="CreateInvoice" method="post" class="row g-2 mt-3">
+            <input type="hidden" name="patientId" value="@Model.PatientId" />
+            <input type="hidden" name="facilityId" value="@activeFacId" />
+            <input type="hidden" name="encounterId" value="@Model.EncounterId" />
+            <div class="col-md-4">
+                <label class="form-label small">Bên chi trả khác / Tạm tính BHYT (VND)</label>
+                <input name="insuranceCoveredAmount" type="number" value="0" min="0" max="@Model.TotalAmount" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small">Ghi chú</label>
+                <input name="notes" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Xác nhận lập hóa đơn</button>
+            </div>
+        </form>
+    }
+</div>

@@ -1,0 +1,55 @@
+@model SmartHospital.Contracts.Common.PagedResult<SmartHospital.Application.Billing.InvoiceSummaryDto>
+@{
+    ViewData["Title"] = "Viện phí & Thu ngân";
+    var patients = ViewBag.Patients as IReadOnlyList<SmartHospital.Contracts.Patients.PatientSummaryDto> ?? [];
+    var report = ViewBag.CashierReport as SmartHospital.Application.Billing.CashierDailyReportDto;
+}
+
+@if (report != null)
+{
+    <div class="row g-3 mb-3">
+        <div class="col-md-3"><div class="sh-kpi-card"><div class="sh-kpi-label">Số phiếu thu hôm nay</div><div class="sh-kpi-value">@report.TotalPaymentsCount</div></div></div>
+        <div class="col-md-3"><div class="sh-kpi-card"><div class="sh-kpi-label">Tổng thu hôm nay</div><div class="sh-kpi-value">@report.TotalCollected.ToString("N0") đ</div></div></div>
+        <div class="col-md-3"><div class="sh-kpi-card"><div class="sh-kpi-label">Đã hoàn tiền</div><div class="sh-kpi-value text-danger">@report.TotalRefunded.ToString("N0") đ</div></div></div>
+        <div class="col-md-3"><div class="sh-kpi-card"><div class="sh-kpi-label">Thực thu ròng</div><div class="sh-kpi-value text-success">@report.NetRevenue.ToString("N0") đ</div></div></div>
+    </div>
+}
+
+<div class="sh-card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <form method="get" class="d-flex gap-2">
+            <input name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Số HĐ, Mã BN, Tên BN..." />
+            <button type="submit" class="btn btn-sm btn-outline-primary">Tìm</button>
+        </form>
+        <form asp-action="CreateInvoice" method="get" class="d-flex gap-2">
+            <select name="patientId" class="form-select form-select-sm" required>
+                @foreach (var p in patients) { <option value="@p.Id">@p.PatientCode - @p.FullName</option> }
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary text-nowrap">+ Tổng hợp bảng kê mới</button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle small">
+            <thead class="table-light">
+                <tr><th>Số hóa đơn</th><th>Bệnh nhân</th><th class="text-end">Tổng tiền</th><th class="text-end">Đã thu</th><th class="text-end">Còn nợ</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var i in Model.Items)
+                {
+                    <tr>
+                        <td class="fw-semibold">@i.InvoiceCode</td>
+                        <td>@i.PatientCode - @i.PatientName</td>
+                        <td class="text-end">@i.TotalAmount.ToString("N0") đ</td>
+                        <td class="text-end">@i.PaidAmount.ToString("N0") đ</td>
+                        <td class="text-end fw-bold @(i.RemainingBalance > 0 ? "text-danger" : "text-success")">@i.RemainingBalance.ToString("N0") đ</td>
+                        <td><span class="badge bg-secondary">@i.Status</span></td>
+                        <td class="text-end">
+                            <a asp-action="Detail" asp-route-id="@i.InvoiceId" class="btn btn-sm btn-primary">Thu tiền / Chi tiết</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

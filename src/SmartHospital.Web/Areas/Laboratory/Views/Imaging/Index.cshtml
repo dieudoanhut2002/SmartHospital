@@ -1,0 +1,26 @@
+@model SmartHospital.Contracts.Common.PagedResult<SmartHospital.Application.Laboratory.ImagingOrderWorklistDto>
+@{
+    ViewData["Title"] = "Chẩn đoán hình ảnh (RIS/PACS Sandbox)";
+}
+<div class="sh-card p-3">
+    <table class="table table-hover table-sm align-middle small">
+        <thead class="table-light">
+            <tr><th>Mã phiếu</th><th>Bệnh nhân</th><th>Dịch vụ</th><th>Kỹ thuật</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model.Items)
+            {
+                <tr>
+                    <td class="fw-semibold">@o.OrderCode</td>
+                    <td>@o.PatientCode - @o.PatientName</td>
+                    <td>@o.ServiceName</td>
+                    <td>@o.Modality</td>
+                    <td><span class="badge @(o.IsVerified ? "bg-success" : "bg-info text-dark")">@o.Status</span></td>
+                    <td class="text-end">
+                        <a asp-action="Detail" asp-route-id="@o.ImagingOrderId" class="btn btn-sm btn-primary">Đọc kết quả</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

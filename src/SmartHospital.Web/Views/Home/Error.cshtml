@@ -1,0 +1,9 @@
+@{
+    ViewData["Title"] = "Thông báo lỗi";
+}
+<div class="sh-card p-4 my-4">
+    <h4 class="text-danger fw-bold">Đã xảy ra lỗi</h4>
+    <p class="mb-2">@ViewBag.ErrorMessage</p>
+    <p class="text-muted small">Mã tra cứu (Correlation ID): <code>@ViewBag.CorrelationId</code></p>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary">Quay lại trang chủ</a>
+</div>

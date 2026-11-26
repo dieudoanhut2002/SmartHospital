@@ -1,0 +1,114 @@
+@{
+    ViewData["Title"] = "Nhân sự, Ca trực & Nghỉ phép";
+    var employees = ViewBag.Employees as IReadOnlyList<SmartHospital.Domain.Organization.Employee> ?? [];
+    var shifts = ViewBag.Shifts as IReadOnlyList<SmartHospital.Domain.Organization.ShiftSchedule> ?? [];
+    var leaves = ViewBag.Leaves as IReadOnlyList<SmartHospital.Domain.Organization.LeaveRecord> ?? [];
+    var depts = ViewBag.Departments as IReadOnlyList<SmartHospital.Domain.Organization.Department> ?? [];
+    var activeFacId = (Guid)(ViewBag.ActiveFacilityId ?? Guid.Empty);
+}
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold mb-2">Thêm hồ sơ nhân viên</h6>
+            <form asp-action="CreateEmployee" method="post" class="row g-2">
+                <input type="hidden" name="facilityId" value="@activeFacId" />
+                <div class="col-4"><input name="employeeCode" class="form-control form-control-sm" placeholder="Mã NV*" required /></div>
+                <div class="col-8"><input name="fullName" class="form-control form-control-sm" placeholder="Họ tên*" required /></div>
+                <div class="col-6">
+                    <select name="departmentId" class="form-select form-select-sm">
+                        @foreach (var d in depts) { <option value="@d.Id">@d.Name</option> }
+                    </select>
+                </div>
+                <div class="col-6"><input name="jobTitle" class="form-control form-control-sm" placeholder="Chức danh" /></div>
+                <div class="col-6"><input name="phone" class="form-control form-control-sm" placeholder="SĐT" /></div>
+                <div class="col-6"><input name="email" class="form-control form-control-sm" placeholder="Email" /></div>
+                <div class="col-12"><button type="submit" class="btn btn-sm btn-primary w-100">+ Thêm nhân viên</button></div>
+            </form>
+        </div>
+
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold mb-2">Phân công ca trực</h6>
+            <form asp-action="CreateShift" method="post" class="row g-2">
+                <input type="hidden" name="facilityId" value="@activeFacId" />
+                <div class="col-md-6">
+                    <select name="employeeId" class="form-select form-select-sm" required>
+                        @foreach (var e in employees.Where(x => x.IsActive)) { <option value="@e.Id">@e.EmployeeCode - @e.FullName</option> }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <select name="departmentId" class="form-select form-select-sm" required>
+                        @foreach (var d in depts) { <option value="@d.Id">@d.Name</option> }
+                    </select>
+                </div>
+                <div class="col-md-4"><input name="shiftDate" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" class="form-control form-control-sm" required /></div>
+                <div class="col-md-4"><input name="shiftName" value="Ca Sáng" class="form-control form-control-sm" required /></div>
+                <div class="col-md-2"><input name="startTime" type="time" value="07:30" class="form-control form-control-sm" required /></div>
+                <div class="col-md-2"><input name="endTime" type="time" value="16:30" class="form-control form-control-sm" required /></div>
+                <div class="col-12"><button type="submit" class="btn btn-sm btn-success w-100">+ Lưu ca trực</button></div>
+            </form>
+        </div>
+
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-2">Ghi nhận nghỉ phép</h6>
+            <form asp-action="CreateLeave" method="post" class="row g-2">
+                <div class="col-12">
+                    <select name="employeeId" class="form-select form-select-sm" required>
+                        @foreach (var e in employees.Where(x => x.IsActive)) { <option value="@e.Id">@e.EmployeeCode - @e.FullName</option> }
+                    </select>
+                </div>
+                <div class="col-4"><input name="fromDate" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" class="form-control form-control-sm" required /></div>
+                <div class="col-4"><input name="toDate" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" class="form-control form-control-sm" required /></div>
+                <div class="col-4"><input name="leaveType" value="Nghỉ phép" class="form-control form-control-sm" required /></div>
+                <div class="col-8"><input name="reason" class="form-control form-control-sm" placeholder="Lý do nghỉ*" required /></div>
+                <div class="col-4"><button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Nghỉ phép</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold">Danh sách nhân viên (@employees.Count)</h6>
+            @foreach (var e in employees)
+            {
+                <form asp-action="UpdateEmployee" method="post" class="row g-1 align-items-center border-top py-1 small">
+                    <input type="hidden" name="employeeId" value="@e.Id" />
+                    <input type="hidden" name="departmentId" value="@e.DepartmentId" />
+                    <input type="hidden" name="phone" value="@e.Phone" />
+                    <input type="hidden" name="email" value="@e.Email" />
+                    <div class="col-2 fw-bold">@e.EmployeeCode</div>
+                    <div class="col-4"><input name="fullName" value="@e.FullName" class="form-control form-control-sm" required /></div>
+                    <div class="col-2"><input name="jobTitle" value="@e.JobTitle" class="form-control form-control-sm" /></div>
+                    <div class="col-2">
+                        <select name="isActive" class="form-select form-select-sm">
+                            <option value="true" selected="@e.IsActive">Làm việc</option>
+                            <option value="false" selected="@(!e.IsActive)">Nghỉ</option>
+                        </select>
+                    </div>
+                    <input type="hidden" name="isTerminated" value="false" />
+                    <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu</button></div>
+                </form>
+            }
+        </div>
+        <div class="sh-card p-3">
+            <h6 class="fw-bold">Lịch ca trực (@shifts.Count) &amp; Nghỉ phép (@leaves.Count)</h6>
+            <table class="table table-sm small mb-0">
+                <thead><tr><th>Ngày</th><th>Ca</th><th>Nhân viên</th><th>Giờ</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var s in shifts)
+                    {
+                        <tr>
+                            <td>@s.ShiftDate.ToString("dd/MM/yyyy")</td><td>@s.ShiftName</td><td>@s.Employee?.FullName</td><td>@s.StartTime - @s.EndTime</td>
+                            <td class="text-end">
+                                <form asp-action="DeleteShift" method="post" class="d-inline">
+                                    <input type="hidden" name="shiftId" value="@s.Id" />
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0">Xóa</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

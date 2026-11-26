@@ -1,0 +1,32 @@
+@model SmartHospital.Domain.Inpatient.Admission
+@{
+    Layout = null;
+    var hospital = ViewBag.Hospital as SmartHospital.Domain.Organization.Hospital;
+    var patient = ViewBag.Patient as SmartHospital.Domain.Patients.Patient;
+    var dept = ViewBag.Department as SmartHospital.Domain.Organization.Department;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Tóm tắt ra viện - @Model.AdmissionCode</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>@@media print { .no-print { display: none; } } body { max-width: 820px; margin: 20px auto; }</style>
+</head>
+<body>
+    <div class="p-4 border">
+        <div class="fw-bold">@hospital?.Name</div>
+        <h5 class="text-center fw-bold my-3">GIẤY TÓM TẮT RA VIỆN (@Model.AdmissionCode)</h5>
+        <div class="small mb-3">
+            <div><strong>Bệnh nhân:</strong> @patient?.FullName (@patient?.PatientCode)</div>
+            <div><strong>Khoa điều trị:</strong> @dept?.Name</div>
+            <div><strong>Ngày vào viện:</strong> @HospitalTime.ToVietnamTime(Model.AdmittedAtUtc).ToString("dd/MM/yyyy HH:mm")</div>
+            <div><strong>Ngày ra viện:</strong> @(Model.DischargedAtUtc.HasValue ? HospitalTime.ToVietnamTime(Model.DischargedAtUtc.Value).ToString("dd/MM/yyyy HH:mm") : "Đang điều trị")</div>
+            <div><strong>Chẩn đoán vào viện:</strong> @Model.AdmissionDiagnosis</div>
+            <div><strong>Tóm tắt quá trình &amp; kết quả:</strong> @Model.DischargeSummary</div>
+            <div><strong>Lời dặn của bác sĩ:</strong> @Model.DischargeInstructions</div>
+        </div>
+        <div class="no-print mt-3"><button onclick="window.print()" class="btn btn-sm btn-primary">In giấy ra viện</button></div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,45 @@
+@model SmartHospital.Contracts.Common.PagedResult<SmartHospital.Application.Admin.IntegrationMessageDto>
+@{
+    ViewData["Title"] = "Thông điệp tích hợp (Demo / Sandbox)";
+}
+
+<div class="mb-3 d-flex gap-2">
+    <a asp-action="AuditLogs" class="btn btn-sm btn-outline-primary">Nhật ký Audit</a>
+    <a asp-action="Integrations" class="btn btn-sm btn-primary">Thông điệp Tích hợp (Sandbox)</a>
+    <a asp-action="Settings" class="btn btn-sm btn-outline-primary">Cấu hình Hệ thống</a>
+    <a asp-action="Status" class="btn btn-sm btn-outline-primary">Trạng thái Kỹ thuật</a>
+</div>
+
+<div class="alert alert-info small">
+    Các kết nối ngoài (LIS, RIS/PACS, BHYT, Hóa đơn điện tử, Cổng thanh toán) đang vận hành qua Adapter <strong>Demo/Sandbox</strong>.
+</div>
+
+<div class="sh-card p-3">
+    <div class="table-responsive">
+        <table class="table table-sm small">
+            <thead class="table-light">
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Provider</th>
+                    <th>Loại</th>
+                    <th>Trạng thái</th>
+                    <th>IdempotencyKey</th>
+                    <th>Kết quả mô phỏng</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in Model.Items)
+                {
+                    <tr>
+                        <td>@HospitalTime.ToVietnamTime(m.CreatedAtUtc).ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td class="fw-semibold">@m.ProviderName</td>
+                        <td>@m.IntegrationType</td>
+                        <td><span class="badge bg-info text-dark">@m.Status</span></td>
+                        <td><code>@m.IdempotencyKey</code></td>
+                        <td>@m.ResponseSummary</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

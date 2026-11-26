@@ -1,0 +1,58 @@
+@model SmartHospital.Domain.Laboratory.ImagingOrder
+@{
+    ViewData["Title"] = $"CĐHA: {Model.OrderCode}";
+    var patient = ViewBag.Patient as SmartHospital.Domain.Patients.Patient;
+    var docs = ViewBag.Documents as IReadOnlyList<SmartHospital.Domain.Audit.Document> ?? [];
+}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="sh-card p-4">
+            <h6 class="fw-bold mb-3">@Model.ServiceName (@Model.Modality) — @patient?.FullName (@patient?.PatientCode)</h6>
+            <form asp-action="SaveReport" method="post">
+                <input type="hidden" name="imagingOrderId" value="@Model.Id" />
+                <div class="mb-3">
+                    <label class="form-label">Mô tả hình ảnh *</label>
+                    <textarea name="findings" rows="4" class="form-control" required>@Model.Report?.Findings</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Kết luận *</label>
+                    <textarea name="conclusion" rows="2" class="form-control" required>@Model.Report?.Conclusion</textarea>
+                </div>
+                @if (Model.Report?.IsVerified != true)
+                {
+                    <div class="form-check mb-3">
+                        <input name="verify" type="checkbox" value="true" class="form-check-input" id="verifyImg" />
+                        <label class="form-check-label" for="verifyImg">Duyệt và khóa kết quả CĐHA</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Lưu báo cáo CĐHA</button>
+                }
+                else
+                {
+                    <div class="alert alert-success small">Đã duyệt bởi @Model.Report.VerifiedBy lúc @Model.Report.VerifiedAtUtc</div>
+                }
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold">Tài liệu &amp; PACS Demo</h6>
+            <p class="small text-muted">Adapter PACS đang chạy chế độ <strong>Demo/Sandbox</strong>.</p>
+            <form asp-action="UploadAttachment" method="post" enctype="multipart/form-data" class="d-flex gap-2 mb-3">
+                <input type="hidden" name="imagingOrderId" value="@Model.Id" />
+                <input type="file" name="file" class="form-control form-control-sm" required />
+                <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">Tải lên</button>
+            </form>
+            <ul class="list-group list-group-flush small">
+                @foreach (var d in docs)
+                {
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>@d.OriginalFileName (@(d.SizeBytes / 1024) KB)</span>
+                        <a asp-action="DownloadDocument" asp-route-docId="@d.Id">Tải xuống</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>

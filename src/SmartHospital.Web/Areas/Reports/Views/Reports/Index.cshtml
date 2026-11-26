@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Báo cáo hoạt động Bệnh viện";
+    var facilities = ViewBag.Facilities as IReadOnlyList<SmartHospital.Domain.Organization.Facility> ?? [];
+    var selFac = (Guid)ViewBag.SelectedFacilityId;
+    var from = (DateOnly)ViewBag.FromDate;
+    var to = (DateOnly)ViewBag.ToDate;
+}
+
+<div class="sh-card p-3 mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small">Cơ sở</label>
+            <select name="facilityId" class="form-select form-select-sm">
+                @foreach (var f in facilities) { <option value="@f.Id" selected="@(f.Id == selFac)">@f.Name</option> }
+            </select>
+        </div>
+        <div class="col-md-3"><label class="form-label small">Từ ngày</label><input name="fromDate" type="date" value="@from.ToString("yyyy-MM-dd")" class="form-control form-control-sm" /></div>
+        <div class="col-md-3"><label class="form-label small">Đến ngày</label><input name="toDate" type="date" value="@to.ToString("yyyy-MM-dd")" class="form-control form-control-sm" /></div>
+        <div class="col-md-2"><button type="submit" class="btn btn-sm btn-primary w-100">Xem báo cáo</button></div>
+    </form>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-3"><div class="sh-kpi-card"><div class="sh-kpi-label">Tổng lượt khám</div><div class="sh-kpi-value">@ViewBag.EncounterCount</div></div></div>
+    <div class="col-md-3"><div class="sh-kpi-card"><div class="sh-kpi-label">Lượt khám hoàn tất</div><div class="sh-kpi-value">@ViewBag.CompletedEncounterCount</div></div></div>
+    <div class="col-md-3"><div class="sh-kpi-card"><div class="sh-kpi-label">Đợt nhập viện nội trú</div><div class="sh-kpi-value">@ViewBag.AdmissionCount</div></div></div>
+    <div class="col-md-3"><div class="sh-kpi-card"><div class="sh-kpi-label">Phiếu xét nghiệm</div><div class="sh-kpi-value">@ViewBag.LabOrderCount</div></div></div>
+    <div class="col-md-4"><div class="sh-kpi-card"><div class="sh-kpi-label">Tổng phát sinh hóa đơn</div><div class="sh-kpi-value">@(((decimal)ViewBag.TotalInvoiced).ToString("N0")) đ</div></div></div>
+    <div class="col-md-4"><div class="sh-kpi-card"><div class="sh-kpi-label">Tổng tiền đã thu</div><div class="sh-kpi-value text-success">@(((decimal)ViewBag.TotalCollected).ToString("N0")) đ</div></div></div>
+    <div class="col-md-4"><div class="sh-kpi-card"><div class="sh-kpi-label">Tổng tiền đã hoàn</div><div class="sh-kpi-value text-danger">@(((decimal)ViewBag.TotalRefunded).ToString("N0")) đ</div></div></div>
+</div>

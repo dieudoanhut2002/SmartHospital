@@ -1,0 +1,36 @@
+@model IReadOnlyList<SmartHospital.Domain.Audit.SystemSetting>
+@{
+    ViewData["Title"] = "Cấu hình hệ thống";
+}
+
+<div class="mb-3 d-flex gap-2">
+    <a asp-action="AuditLogs" class="btn btn-sm btn-outline-primary">Nhật ký Audit</a>
+    <a asp-action="Integrations" class="btn btn-sm btn-outline-primary">Thông điệp Tích hợp</a>
+    <a asp-action="Settings" class="btn btn-sm btn-primary">Cấu hình Hệ thống</a>
+    <a asp-action="Status" class="btn btn-sm btn-outline-primary">Trạng thái Kỹ thuật</a>
+</div>
+
+<div class="sh-card p-3">
+    <table class="table table-sm align-middle">
+        <thead class="table-light">
+            <tr><th>Nhóm</th><th>Khóa cấu hình</th><th>Mô tả</th><th>Giá trị</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td><span class="badge bg-light text-dark border">@s.Category</span></td>
+                    <td class="fw-semibold"><code>@s.Key</code></td>
+                    <td class="small text-muted">@s.Description</td>
+                    <td colspan="2">
+                        <form asp-action="UpdateSetting" method="post" class="d-flex gap-2">
+                            <input type="hidden" name="id" value="@s.Id" />
+                            <input name="value" value="@s.Value" class="form-control form-control-sm" />
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Lưu</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

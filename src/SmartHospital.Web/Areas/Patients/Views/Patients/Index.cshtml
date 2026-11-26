@@ -1,0 +1,52 @@
+@model SmartHospital.Contracts.Common.PagedResult<SmartHospital.Contracts.Patients.PatientSummaryDto>
+@{
+    ViewData["Title"] = "Hồ sơ bệnh nhân";
+}
+
+<div class="sh-card p-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <form method="get" class="d-flex gap-2">
+            <input name="search" value="@ViewBag.Search" class="form-control form-control-sm" style="min-width:280px;" placeholder="Mã BN, họ tên, SĐT, CCCD..." />
+            <button type="submit" class="btn btn-sm btn-outline-primary">Tìm kiếm</button>
+        </form>
+        <a asp-action="Create" class="btn btn-sm btn-primary">+ Tạo hồ sơ bệnh nhân</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Mã bệnh nhân</th>
+                    <th>Họ và tên</th>
+                    <th>Ngày sinh</th>
+                    <th>Giới tính</th>
+                    <th>Điện thoại</th>
+                    <th>CCCD/CMND</th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model.Items)
+                {
+                    <tr>
+                        <td class="fw-semibold">@p.PatientCode</td>
+                        <td>
+                            @p.FullName
+                            @if (p.IsDemoData) { <span class="badge bg-light text-muted border ms-1">Mẫu</span> }
+                            @if (p.RequiresVerification) { <span class="badge bg-warning text-dark ms-1">Cần xác minh</span> }
+                        </td>
+                        <td>@p.DateOfBirth?.ToString("dd/MM/yyyy")</td>
+                        <td>@p.Gender</td>
+                        <td>@p.PhoneNumber</td>
+                        <td>@p.NationalId</td>
+                        <td class="text-end">
+                            <a asp-action="Detail" asp-route-id="@p.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                            <a asp-area="Reception" asp-controller="Reception" asp-action="QueueBoard" asp-route-patientId="@p.Id" class="btn btn-sm btn-outline-success">Đăng ký khám</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="small text-muted">Tổng: @Model.TotalCount hồ sơ (Trang @Model.Page / @Math.Max(1, Model.TotalPages))</div>
+</div>

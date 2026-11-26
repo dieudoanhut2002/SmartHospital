@@ -1,0 +1,100 @@
+@{
+    ViewData["Title"] = "Cổng thông tin Bệnh nhân";
+    var patient = ViewBag.Patient as SmartHospital.Domain.Patients.Patient;
+    var facilities = ViewBag.Facilities as IReadOnlyList<SmartHospital.Domain.Organization.Facility> ?? [];
+    var depts = ViewBag.Departments as IReadOnlyList<SmartHospital.Domain.Organization.Department> ?? [];
+    var clinics = ViewBag.Clinics as IReadOnlyList<SmartHospital.Domain.Organization.Clinic> ?? [];
+    var appointments = ViewBag.Appointments as IReadOnlyList<SmartHospital.Domain.Reception.Appointment> ?? [];
+    var prescriptions = ViewBag.Prescriptions as IReadOnlyList<SmartHospital.Domain.Clinical.Prescription> ?? [];
+    var invoices = ViewBag.Invoices as IReadOnlyList<SmartHospital.Domain.Billing.Invoice> ?? [];
+}
+
+@if (patient == null)
+{
+    <div class="alert alert-warning">Tài khoản này chưa được liên kết với hồ sơ bệnh nhân nào trong bệnh viện.</div>
+}
+else
+{
+    <div class="sh-card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-1">Xin chào, @patient.FullName</h5>
+                <div class="small text-muted">Mã hồ sơ bệnh nhân: <strong>@patient.PatientCode</strong></div>
+            </div>
+        </div>
+        <form asp-action="UpdateContact" method="post" class="row g-2 mt-2">
+            <div class="col-md-3"><input name="phoneNumber" value="@patient.PhoneNumber" class="form-control form-control-sm" placeholder="Số điện thoại" /></div>
+            <div class="col-md-3"><input name="email" value="@patient.Email" class="form-control form-control-sm" placeholder="Email" /></div>
+            <div class="col-md-4"><input name="address" value="@patient.Address" class="form-control form-control-sm" placeholder="Địa chỉ liên hệ" /></div>
+            <div class="col-md-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Cập nhật liên hệ</button></div>
+        </form>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-5">
+            <div class="sh-card p-3 mb-3">
+                <h6 class="fw-bold mb-3">Đặt lịch khám trực tuyến</h6>
+                <form asp-action="BookAppointment" method="post" class="row g-2">
+                    <input type="hidden" name="facilityId" value="@facilities.FirstOrDefault()?.Id" />
+                    <input type="hidden" name="departmentId" value="@(depts.FirstOrDefault(d => d.DepartmentType == DepartmentType.Outpatient)?.Id ?? depts.FirstOrDefault()?.Id)" />
+                    <div class="col-12">
+                        <label class="form-label small">Chọn phòng khám</label>
+                        <select name="clinicId" class="form-select form-select-sm">
+                            @foreach (var c in clinics) { <option value="@c.Id">@c.Name</option> }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">Ngày giờ mong muốn</label>
+                        <input name="scheduledLocal" type="datetime-local" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-ddTHH:mm")" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small">Triệu chứng / Lý do</label>
+                        <input name="chiefComplaint" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12"><button type="submit" class="btn btn-sm btn-primary w-100">Đặt lịch khám</button></div>
+                </form>
+            </div>
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Lịch hẹn của tôi</h6>
+                @foreach (var a in appointments)
+                {
+                    <div class="border-bottom py-1 small d-flex justify-content-between align-items-center">
+                        <span><strong>@a.AppointmentCode</strong> — @HospitalTime.ToVietnamTime(a.ScheduledAtUtc).ToString("dd/MM/yyyy HH:mm") (<span class="badge bg-info text-dark">@a.Status</span>)</span>
+                        @if (a.Status == AppointmentStatus.Booked)
+                        {
+                            <form asp-action="CancelAppointment" method="post" class="d-inline">
+                                <input type="hidden" name="appointmentId" value="@a.Id" />
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0">Hủy</button>
+                            </form>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="sh-card p-3 mb-3">
+                <h6 class="fw-bold">Đơn thuốc của tôi</h6>
+                @foreach (var rx in prescriptions)
+                {
+                    <div class="border rounded p-2 mb-2 small">
+                        <strong>@rx.PrescriptionCode</strong> (@HospitalTime.ToVietnamTime(rx.PrescribedAtUtc).ToString("dd/MM/yyyy")) — @rx.DoctorName
+                        <ul class="mb-0 ps-3">
+                            @foreach (var item in rx.Items) { <li>@item.MedicineName — SL: @item.QuantityPrescribed @item.UnitName (@item.DosageInstruction)</li> }
+                        </ul>
+                    </div>
+                }
+            </div>
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Hóa đơn &amp; Công nợ</h6>
+                @foreach (var inv in invoices)
+                {
+                    <div class="border-bottom py-1 small d-flex justify-content-between">
+                        <span><strong>@inv.InvoiceCode</strong> (@inv.Status)</span>
+                        <span>Tổng: @inv.PatientResponsibilityAmount.ToString("N0") đ | Đã trả: @inv.PaidAmount.ToString("N0") đ</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}

@@ -1,0 +1,137 @@
+﻿@model SmartHospital.Application.Inpatient.DashboardMetricsDto
+@inject ICurrentUserService CurrentUser
+@{
+    ViewData["Title"] = "Tổng quan hoạt động bệnh viện";
+    var facilities = ViewBag.Facilities as IReadOnlyList<SmartHospital.Domain.Organization.Facility> ?? [];
+    var activeFacId = (Guid)(ViewBag.ActiveFacilityId ?? Guid.Empty);
+    var notifications = ViewBag.Notifications as IReadOnlyList<SmartHospital.Domain.Audit.Notification> ?? [];
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+        <span class="text-muted small">Múi giờ hiển thị: Asia/Ho_Chi_Minh | Đơn vị tiền tệ: VND</span>
+    </div>
+    @if (facilities.Count > 0)
+    {
+        <form asp-action="SwitchFacility" method="post" class="d-flex align-items-center gap-2">
+            <label class="small text-muted mb-0">Cơ sở:</label>
+            <select name="facilityId" class="form-select form-select-sm" onchange="this.form.submit()">
+                @foreach (var f in facilities)
+                {
+                    <option value="@f.Id" selected="@(f.Id == activeFacId)">@f.Code - @f.Name</option>
+                }
+            </select>
+        </form>
+    }
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="sh-kpi-card">
+            <div class="sh-kpi-label">Lượt khám hôm nay</div>
+            <div class="sh-kpi-value">@Model.EncountersToday</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="sh-kpi-card">
+            <div class="sh-kpi-label">Bệnh nhân đang chờ khám</div>
+            <div class="sh-kpi-value">@Model.WaitingQueueCount</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="sh-kpi-card">
+            <div class="sh-kpi-label">Nội trú / Giường sử dụng</div>
+            <div class="sh-kpi-value">@Model.ActiveAdmissionsCount <span class="fs-6 text-muted fw-normal">(@Model.OccupiedBedsCount / @Model.TotalBedsCount giường)</span></div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="sh-kpi-card">
+            <div class="sh-kpi-label">Doanh thu đã thu hôm nay</div>
+            <div class="sh-kpi-value">@Model.RevenueToday.ToString("N0") đ</div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="sh-kpi-card">
+            <div class="sh-kpi-label">Xét nghiệm đang xử lý</div>
+            <div class="sh-kpi-value">@Model.PendingLabOrdersCount</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="sh-kpi-card">
+            <div class="sh-kpi-label">Kết quả XN chờ duyệt</div>
+            <div class="sh-kpi-value">@Model.PendingLabVerifyCount</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="sh-kpi-card">
+            <div class="sh-kpi-label">Đơn thuốc chờ cấp phát</div>
+            <div class="sh-kpi-value">@Model.PendingPrescriptionsCount</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="sh-kpi-card">
+            <div class="sh-kpi-label">Lô thuốc cảnh báo tồn thấp</div>
+            <div class="sh-kpi-value">@Model.LowStockBatchCount</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-3">Truy cập nhanh theo vai trò</h6>
+            <div class="d-flex flex-wrap gap-2">
+                @if (CurrentUser.HasPermission(PermissionCodes.PatientCreate))
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-area="Patients" asp-controller="Patients" asp-action="Create">+ Tiếp nhận bệnh nhân mới</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.AppointmentRead))
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-area="Reception" asp-controller="Reception" asp-action="QueueBoard">Bảng hàng đợi phòng khám</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.ClinicalRead))
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-area="Clinical" asp-controller="Clinical" asp-action="Index">Danh sách chờ khám (EMR)</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.LabRead))
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-area="Laboratory" asp-controller="Laboratory" asp-action="Index">Phòng xét nghiệm (LIS)</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.PharmacyRead))
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-area="Pharmacy" asp-controller="Pharmacy" asp-action="Index">Cấp phát thuốc</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.BillingRead))
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-area="Billing" asp-controller="Billing" asp-action="Index">Thu ngân &amp; Hóa đơn</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.InpatientRead))
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-area="Inpatient" asp-controller="Inpatient" asp-action="Index">Sơ đồ giường nội trú</a>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-3">Thông báo hệ thống gần đây</h6>
+            @if (notifications.Count == 0)
+            {
+                <p class="text-muted small mb-0">Chưa có thông báo mới.</p>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush small">
+                    @foreach (var n in notifications)
+                    {
+                        <li class="list-group-item px-0">
+                            <div class="fw-semibold">@n.Title</div>
+                            <div class="text-muted">@n.Message</div>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>

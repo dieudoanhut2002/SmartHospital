@@ -1,0 +1,97 @@
+@{
+    ViewData["Title"] = "Điều dưỡng & Thực hiện y lệnh";
+    var admissions = ViewBag.Admissions as IReadOnlyList<SmartHospital.Application.Inpatient.AdmissionListItemDto> ?? [];
+    var selectedId = ViewBag.SelectedAdmissionId as Guid?;
+    var notes = ViewBag.Notes as IReadOnlyList<SmartHospital.Domain.Inpatient.NursingNote> ?? [];
+    var obs = ViewBag.Observations as IReadOnlyList<SmartHospital.Domain.Inpatient.NursingObservation> ?? [];
+    var meds = ViewBag.MedAdmins as IReadOnlyList<SmartHospital.Domain.Inpatient.MedicationAdministration> ?? [];
+}
+
+<div class="sh-card p-3 mb-3">
+    <form method="get" class="d-flex align-items-center gap-2">
+        <label class="small fw-semibold mb-0">Chọn bệnh nhân nội trú:</label>
+        <select name="admissionId" class="form-select form-select-sm" style="max-width:360px;" onchange="this.form.submit()">
+            @foreach (var a in admissions)
+            {
+                <option value="@a.AdmissionId" selected="@(selectedId == a.AdmissionId)">@a.CurrentBedCode | @a.PatientCode - @a.PatientName</option>
+            }
+        </select>
+    </form>
+</div>
+
+@if (selectedId.HasValue)
+{
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Theo dõi sinh hiệu &amp; Dịch truyền</h6>
+                <form asp-action="AddObservation" method="post" class="row g-2 mb-3">
+                    <input type="hidden" name="admissionId" value="@selectedId" />
+                    <div class="col-6"><input name="systolicBp" type="number" class="form-control form-control-sm" placeholder="HA Tâm thu" /></div>
+                    <div class="col-6"><input name="diastolicBp" type="number" class="form-control form-control-sm" placeholder="HA Tâm trương" /></div>
+                    <div class="col-4"><input name="heartRate" type="number" class="form-control form-control-sm" placeholder="Mạch" /></div>
+                    <div class="col-4"><input name="temperatureC" type="number" step="0.1" class="form-control form-control-sm" placeholder="Nhiệt độ" /></div>
+                    <div class="col-4"><input name="spO2" type="number" class="form-control form-control-sm" placeholder="SpO2" /></div>
+                    <div class="col-12"><input name="fluidIo" class="form-control form-control-sm" placeholder="Dịch truyền / Vào-Ra..." /></div>
+                    <div class="col-12"><button type="submit" class="btn btn-sm btn-primary w-100">Ghi nhận theo dõi</button></div>
+                </form>
+                @foreach (var o in obs)
+                {
+                    <div class="border rounded p-2 mb-2 small @(o.IsOutOfThreshold ? "border-danger bg-light" : "")">
+                        <div><strong>@HospitalTime.ToVietnamTime(o.ObservedAtUtc).ToString("dd/MM HH:mm")</strong> — @o.RecordedBy</div>
+                        <div>HA: @o.SystolicBp/@o.DiastolicBp | M: @o.HeartRate | T: @o.TemperatureC | SpO2: @o.SpO2%</div>
+                        @if (o.IsOutOfThreshold) { <div class="text-danger fw-semibold">@o.AlertNote</div> }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Thực hiện y lệnh thuốc (MAR)</h6>
+                <form asp-action="RecordMedication" method="post" class="row g-2 mb-3">
+                    <input type="hidden" name="admissionId" value="@selectedId" />
+                    <div class="col-7"><input name="medicineName" class="form-control form-control-sm" placeholder="Tên thuốc*" required /></div>
+                    <div class="col-5"><input name="dose" class="form-control form-control-sm" placeholder="Liều dùng*" required /></div>
+                    <div class="col-5">
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="Administered">Đã dùng</option>
+                            <option value="Omitted">Bỏ liều</option>
+                        </select>
+                    </div>
+                    <div class="col-7"><input name="omissionReason" class="form-control form-control-sm" placeholder="Lý do (nếu bỏ liều)" /></div>
+                    <div class="col-12"><button type="submit" class="btn btn-sm btn-success w-100">Ghi nhận thực hiện thuốc</button></div>
+                </form>
+                @foreach (var m in meds)
+                {
+                    <div class="border rounded p-2 mb-1 small">
+                        <strong>@m.MedicineName (@m.Dose)</strong> — <span class="badge @(m.Status == "Administered" ? "bg-success" : "bg-warning text-dark")">@m.Status</span>
+                        <div class="text-muted">@m.RecordedBy | @m.OmissionReason</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="sh-card p-3">
+                <h6 class="fw-bold">Phiếu chăm sóc điều dưỡng</h6>
+                <form asp-action="AddNote" method="post" class="mb-3">
+                    <input type="hidden" name="admissionId" value="@selectedId" />
+                    <textarea name="noteText" rows="2" class="form-control form-control-sm mb-2" placeholder="Diễn biến chăm sóc..." required></textarea>
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu phiếu chăm sóc</button>
+                </form>
+                @foreach (var n in notes)
+                {
+                    <div class="border rounded p-2 mb-2 small">
+                        <div class="text-muted">@HospitalTime.ToVietnamTime(n.RecordedAtUtc).ToString("dd/MM HH:mm") — @n.RecordedBy</div>
+                        <div>@n.NoteText</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info">Chưa có bệnh nhân nội trú nào đang điều trị.</div>
+}

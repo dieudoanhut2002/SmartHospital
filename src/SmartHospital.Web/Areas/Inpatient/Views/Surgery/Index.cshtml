@@ -1,0 +1,69 @@
+@{
+    ViewData["Title"] = "Lập kế hoạch & Lịch Phẫu thuật";
+    var requests = ViewBag.Requests as IReadOnlyList<SmartHospital.Domain.Inpatient.SurgeryRequest> ?? [];
+    var rooms = ViewBag.Rooms as IReadOnlyList<SmartHospital.Domain.Organization.Room> ?? [];
+    var patients = ViewBag.Patients as IReadOnlyList<SmartHospital.Contracts.Patients.PatientSummaryDto> ?? [];
+    var encounters = ViewBag.Encounters as IReadOnlyList<SmartHospital.Domain.Reception.Encounter> ?? [];
+    var activeFacId = (Guid)(ViewBag.ActiveFacilityId ?? Guid.Empty);
+}
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-3">Tạo kế hoạch phẫu thuật</h6>
+            <form asp-action="CreateRequest" method="post">
+                <input type="hidden" name="facilityId" value="@activeFacId" />
+                <div class="mb-2">
+                    <label class="form-label small">Bệnh nhân *</label>
+                    <select name="patientId" class="form-select form-select-sm" required>
+                        @foreach (var p in patients) { <option value="@p.Id">@p.PatientCode - @p.FullName</option> }
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Lượt khám liên kết *</label>
+                    <select name="encounterId" class="form-select form-select-sm" required>
+                        @foreach (var e in encounters) { <option value="@e.Id">@e.EncounterCode</option> }
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label small">Tên phẫu thuật *</label><input name="procedureName" class="form-control form-control-sm" required /></div>
+                <div class="mb-2">
+                    <label class="form-label small">Phòng mổ</label>
+                    <select name="operatingRoomId" class="form-select form-select-sm">
+                        @foreach (var r in rooms) { <option value="@r.Id">@r.Name</option> }
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label small">Lịch dự kiến</label><input name="scheduledLocal" type="datetime-local" class="form-control form-control-sm" /></div>
+                <div class="mb-2"><label class="form-label small">Ekip phẫu thuật</label><input name="teamSummary" class="form-control form-control-sm" placeholder="PTV chính, Phụ mổ, Gây mê..." /></div>
+                <div class="mb-3"><label class="form-label small">Checklist chuẩn bị</label><input name="checklistSummary" class="form-control form-control-sm" value="Đã kiểm tra cam kết &amp; nhịn ăn" /></div>
+                <button type="submit" class="btn btn-sm btn-primary w-100">Lưu lịch phẫu thuật</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-3">Danh sách lịch phẫu thuật (@requests.Count)</h6>
+            <table class="table table-sm small align-middle">
+                <thead class="table-light"><tr><th>Mã</th><th>Phẫu thuật</th><th>Ekip</th><th>Trạng thái</th><th>Cập nhật</th></tr></thead>
+                <tbody>
+                    @foreach (var s in requests)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@s.RequestCode</td>
+                            <td>@s.ProcedureName</td>
+                            <td>@s.TeamSummary</td>
+                            <td><span class="badge bg-primary">@s.Status</span></td>
+                            <td>
+                                <form asp-action="UpdateStatus" method="post" class="d-flex gap-1">
+                                    <input type="hidden" name="surgeryId" value="@s.Id" />
+                                    <select name="status" class="form-select form-select-sm" asp-items="Html.GetEnumSelectList<SurgeryStatus>()"></select>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Lưu</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

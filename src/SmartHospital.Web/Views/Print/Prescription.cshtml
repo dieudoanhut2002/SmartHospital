@@ -1,0 +1,34 @@
+@model SmartHospital.Domain.Clinical.Prescription
+@{
+    Layout = null;
+    var hospital = ViewBag.Hospital as SmartHospital.Domain.Organization.Hospital;
+    var patient = ViewBag.Patient as SmartHospital.Domain.Patients.Patient;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Đơn thuốc - @Model.PrescriptionCode</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>@@media print { .no-print { display: none; } } body { max-width: 780px; margin: 20px auto; }</style>
+</head>
+<body>
+    <div class="p-4 border">
+        <div class="fw-bold">@hospital?.Name</div>
+        <h5 class="text-center fw-bold my-3">ĐƠN THUỐC (@Model.PrescriptionCode)</h5>
+        <p class="small"><strong>Bệnh nhân:</strong> @patient?.FullName (@patient?.PatientCode) | <strong>Ngày kê:</strong> @HospitalTime.ToVietnamTime(Model.PrescribedAtUtc).ToString("dd/MM/yyyy HH:mm")</p>
+        <table class="table table-sm table-bordered small">
+            <thead><tr><th>#</th><th>Tên thuốc</th><th>Số lượng</th><th>Cách dùng</th></tr></thead>
+            <tbody>
+                @{ int stt = 1; }
+                @foreach (var item in Model.Items)
+                {
+                    <tr><td>@(stt++)</td><td>@item.MedicineName</td><td>@item.QuantityPrescribed @item.UnitName</td><td>@item.DosageInstruction</td></tr>
+                }
+            </tbody>
+        </table>
+        <div class="text-end small mt-4"><strong>Bác sĩ kê đơn: @Model.DoctorName</strong></div>
+        <div class="no-print mt-3"><button onclick="window.print()" class="btn btn-sm btn-primary">In đơn thuốc</button></div>
+    </div>
+</body>
+</html>

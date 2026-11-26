@@ -1,0 +1,106 @@
+@model SmartHospital.Contracts.Common.PagedResult<SmartHospital.Application.Reception.AppointmentListItemDto>
+@{
+    ViewData["Title"] = "Quản lý lịch hẹn khám";
+    var patients = ViewBag.Patients as IReadOnlyList<SmartHospital.Contracts.Patients.PatientSummaryDto> ?? [];
+    var departments = ViewBag.Departments as IReadOnlyList<SmartHospital.Domain.Organization.Department> ?? [];
+    var clinics = ViewBag.Clinics as IReadOnlyList<SmartHospital.Domain.Organization.Clinic> ?? [];
+    var activeFacId = (Guid)(ViewBag.ActiveFacilityId ?? Guid.Empty);
+}
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-3">Đặt lịch hẹn mới</h6>
+            <form asp-action="CreateAppointment" method="post">
+                <input type="hidden" name="facilityId" value="@activeFacId" />
+                <div class="mb-2">
+                    <label class="form-label small">Bệnh nhân *</label>
+                    <select name="patientId" class="form-select form-select-sm" required>
+                        @foreach (var p in patients)
+                        {
+                            <option value="@p.Id">@p.PatientCode - @p.FullName (@p.PhoneNumber)</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Khoa *</label>
+                    <select name="departmentId" class="form-select form-select-sm" required>
+                        @foreach (var d in departments)
+                        {
+                            <option value="@d.Id">@d.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Phòng khám</label>
+                    <select name="clinicId" class="form-select form-select-sm">
+                        @foreach (var c in clinics)
+                        {
+                            <option value="@c.Id">@c.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Thời gian hẹn *</label>
+                    <input name="scheduledLocal" type="datetime-local" class="form-control form-control-sm" value="@DateTime.Now.AddHours(1).ToString("yyyy-MM-ddTHH:mm")" required />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Lý do khám</label>
+                    <input name="chiefComplaint" class="form-control form-control-sm" />
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary w-100">Tạo lịch hẹn</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="sh-card p-3">
+            <div class="d-flex justify-content-between mb-3">
+                <h6 class="fw-bold mb-0">Danh sách lịch hẹn (@Model.TotalCount)</h6>
+                <form method="get" class="d-flex gap-2">
+                    <input name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Mã lịch hẹn / BN..." />
+                    <button class="btn btn-sm btn-outline-primary">Tìm</button>
+                </form>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle small">
+                    <thead class="table-light">
+                        <tr><th>Mã</th><th>Bệnh nhân</th><th>Phòng khám</th><th>Giờ hẹn</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model.Items)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@a.AppointmentCode</td>
+                                <td>@a.PatientCode - @a.PatientName</td>
+                                <td>@a.ClinicName</td>
+                                <td>@HospitalTime.ToVietnamTime(a.ScheduledAtUtc).ToString("dd/MM/yyyy HH:mm")</td>
+                                <td><span class="badge bg-info text-dark">@a.Status</span></td>
+                                <td class="text-end">
+                                    @if (a.Status == AppointmentStatus.Booked && a.EncounterId == null)
+                                    {
+                                        <form asp-action="WalkInCheckIn" method="post" class="d-inline">
+                                            <input type="hidden" name="patientId" value="@a.PatientId" />
+                                            <input type="hidden" name="facilityId" value="@a.FacilityId" />
+                                            <input type="hidden" name="departmentId" value="@a.DepartmentId" />
+                                            <input type="hidden" name="clinicId" value="@(a.ClinicId ?? clinics.FirstOrDefault()?.Id)" />
+                                            <input type="hidden" name="appointmentId" value="@a.Id" />
+                                            <input type="hidden" name="chiefComplaint" value="@a.ChiefComplaint" />
+                                            <button class="btn btn-sm btn-success" type="submit">Check-in</button>
+                                        </form>
+                                        <form asp-action="UpdateAppointmentStatus" method="post" class="d-inline">
+                                            <input type="hidden" name="appointmentId" value="@a.Id" />
+                                            <input type="hidden" name="newStatus" value="@AppointmentStatus.Cancelled" />
+                                            <input type="hidden" name="reason" value="Hủy lịch hẹn từ tiếp đón" />
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Hủy</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

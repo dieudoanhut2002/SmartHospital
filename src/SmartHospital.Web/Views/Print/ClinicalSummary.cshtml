@@ -1,0 +1,43 @@
+@model SmartHospital.Application.Clinical.EncounterWorkspaceDto
+@{
+    Layout = null;
+    var hospital = ViewBag.Hospital as SmartHospital.Domain.Organization.Hospital;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>Phiếu khám &amp; Chỉ định - @Model.Encounter.EncounterCode</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>@@media print { .no-print { display: none; } } body { max-width: 820px; margin: 20px auto; }</style>
+</head>
+<body>
+    <div class="p-4 border">
+        <div class="d-flex justify-content-between border-bottom pb-2 mb-3">
+            <div><h5 class="fw-bold mb-0">@hospital?.Name</h5><div class="small text-muted">@hospital?.Address</div></div>
+            <div class="text-end small"><strong>Mã lượt khám: @Model.Encounter.EncounterCode</strong><div>@HospitalTime.ToVietnamTime(Model.Encounter.StartedAtUtc).ToString("dd/MM/yyyy HH:mm")</div></div>
+        </div>
+        <h5 class="text-center fw-bold mb-3">PHIẾU KHÁM BỆNH &amp; CHỈ ĐỊNH LÂM SÀNG</h5>
+        <p class="small"><strong>Họ tên:</strong> @Model.Patient.FullName | <strong>Mã BN:</strong> @Model.Patient.PatientCode | <strong>Ngày sinh:</strong> @Model.Patient.DateOfBirth?.ToString("dd/MM/yyyy")</p>
+        @if (Model.ClinicalNote != null)
+        {
+            <div class="small mb-3">
+                <div><strong>Lý do khám:</strong> @Model.ClinicalNote.ChiefComplaint</div>
+                <div><strong>Khám lâm sàng:</strong> @Model.ClinicalNote.PhysicalExam</div>
+                <div><strong>Chẩn đoán xác định:</strong> @Model.ClinicalNote.FinalDiagnosis</div>
+                <div><strong>Hướng điều trị:</strong> @Model.ClinicalNote.TreatmentPlan</div>
+            </div>
+        }
+        @if (Model.LabOrders.Count > 0 || Model.ImagingOrders.Count > 0)
+        {
+            <h6 class="fw-bold">Chỉ định cận lâm sàng</h6>
+            <ul class="small">
+                @foreach (var lo in Model.LabOrders) { @foreach (var i in lo.Items) { <li>XN [@lo.OrderCode]: @i.TestName</li> } }
+                @foreach (var io in Model.ImagingOrders) { <li>CĐHA [@io.OrderCode]: @io.ServiceName</li> }
+            </ul>
+        }
+        <div class="text-end small mt-4"><em>Người lập: @(Model.ClinicalNote?.AuthorName ?? "Bác sĩ khám")</em></div>
+        <div class="no-print mt-3"><button onclick="window.print()" class="btn btn-sm btn-primary">In phiếu</button></div>
+    </div>
+</body>
+</html>

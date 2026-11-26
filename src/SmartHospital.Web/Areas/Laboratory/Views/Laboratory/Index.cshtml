@@ -1,0 +1,35 @@
+@model SmartHospital.Contracts.Common.PagedResult<SmartHospital.Application.Laboratory.LabOrderWorklistDto>
+@{
+    ViewData["Title"] = "Phòng Xét nghiệm (LIS)";
+}
+<div class="sh-card p-3">
+    <div class="d-flex justify-content-between mb-3">
+        <form method="get" class="d-flex gap-2">
+            <input name="search" value="@ViewBag.Search" class="form-control form-control-sm" placeholder="Mã phiếu XN, Mã BN, Tên BN..." />
+            <button type="submit" class="btn btn-sm btn-outline-primary">Tìm</button>
+        </form>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover table-sm align-middle small">
+            <thead class="table-light">
+                <tr><th>Mã phiếu</th><th>Bệnh nhân</th><th>Barcode mẫu</th><th>Bác sĩ chỉ định</th><th>Tiến độ</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model.Items)
+                {
+                    <tr>
+                        <td class="fw-semibold">@o.OrderCode</td>
+                        <td>@o.PatientCode - @o.PatientName</td>
+                        <td><code>@o.SpecimenBarcode</code> (@o.SpecimenStatus)</td>
+                        <td>@o.OrderedByName</td>
+                        <td>@o.VerifiedCount / @o.ItemCount đã duyệt</td>
+                        <td><span class="badge bg-info text-dark">@o.Status</span></td>
+                        <td class="text-end">
+                            <a asp-action="Detail" asp-route-id="@o.LabOrderId" class="btn btn-sm btn-primary">Xử lý / Nhập KQ</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

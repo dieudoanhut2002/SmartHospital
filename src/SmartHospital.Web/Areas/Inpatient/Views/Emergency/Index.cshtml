@@ -1,0 +1,58 @@
+@{
+    ViewData["Title"] = "Khoa Cấp cứu & Phân loại ưu tiên";
+    var intakes = ViewBag.Intakes as IReadOnlyList<SmartHospital.Domain.Inpatient.EmergencyIntake> ?? [];
+    var patients = ViewBag.Patients as IReadOnlyList<SmartHospital.Contracts.Patients.PatientSummaryDto> ?? [];
+    var activeFacId = (Guid)(ViewBag.ActiveFacilityId ?? Guid.Empty);
+}
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold text-danger mb-3">Tiếp nhận cấp cứu nhanh</h6>
+            <form asp-action="CreateIntake" method="post">
+                <input type="hidden" name="facilityId" value="@activeFacId" />
+                <div class="mb-2">
+                    <label class="form-label small">Bệnh nhân *</label>
+                    <select name="patientId" class="form-select form-select-sm" required>
+                        @foreach (var p in patients) { <option value="@p.Id">@p.PatientCode - @p.FullName</option> }
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Phân loại ưu tiên (do nhân viên y tế đánh giá)</label>
+                    <select name="triageLevel" class="form-select form-select-sm" asp-items="Html.GetEnumSelectList<EmergencyTriageLevel>()"></select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small">Tình trạng ban đầu *</label>
+                    <textarea name="initialCondition" rows="2" class="form-control form-control-sm" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Vị trí / Giường cấp cứu</label>
+                    <input name="bayLocation" class="form-control form-control-sm" placeholder="CC-01" />
+                </div>
+                <button type="submit" class="btn btn-sm btn-danger w-100">Tiếp nhận cấp cứu</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="sh-card p-3">
+            <h6 class="fw-bold mb-3">Danh sách cấp cứu</h6>
+            <table class="table table-sm small align-middle">
+                <thead class="table-light"><tr><th>Mã</th><th>Ưu tiên</th><th>Tình trạng</th><th>Vị trí</th><th>Thời gian</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var i in intakes)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@i.EmergencyCode</td>
+                            <td><span class="badge bg-danger">@i.TriageLevel</span></td>
+                            <td>@i.InitialCondition</td>
+                            <td>@i.BayLocation</td>
+                            <td>@HospitalTime.ToVietnamTime(i.ArrivedAtUtc).ToString("dd/MM HH:mm")</td>
+                            <td><a asp-area="Clinical" asp-controller="Clinical" asp-action="Workspace" asp-route-id="@i.EncounterId" class="btn btn-sm btn-outline-primary">Mở EMR</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,98 @@
+@model SmartHospital.Domain.Laboratory.LabOrder
+@inject ICurrentUserService CurrentUser
+@{
+    ViewData["Title"] = $"Phiếu xét nghiệm: {Model.OrderCode}";
+    var patient = ViewBag.Patient as SmartHospital.Domain.Patients.Patient;
+    var specimen = Model.Specimens.FirstOrDefault();
+}
+
+<div class="sh-card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h5 class="fw-bold mb-1">@Model.OrderCode — @patient?.FullName (@patient?.PatientCode)</h5>
+            <div class="small text-muted">
+                Barcode: <code>@specimen?.Barcode</code> | Trạng thái mẫu: <strong>@specimen?.Status</strong> | Trạng thái phiếu: <span class="badge bg-primary">@Model.Status</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-area="" asp-controller="Print" asp-action="LabResult" asp-route-labOrderId="@Model.Id" target="_blank" class="btn btn-sm btn-outline-secondary">In phiếu kết quả</a>
+            @if (specimen?.Status == SpecimenStatus.PendingCollection && CurrentUser.HasPermission(PermissionCodes.LabSpecimenManage))
+            {
+                <form asp-action="CollectSpecimen" method="post" class="d-inline">
+                    <input type="hidden" name="labOrderId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-sm btn-warning">Đã lấy mẫu</button>
+                </form>
+            }
+            @if (specimen?.Status == SpecimenStatus.Collected && CurrentUser.HasPermission(PermissionCodes.LabSpecimenManage))
+            {
+                <form asp-action="ReceiveSpecimen" method="post" class="d-inline">
+                    <input type="hidden" name="labOrderId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-sm btn-success">Nhận mẫu vào Lab</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="sh-card p-3">
+    <h6 class="fw-bold mb-3">Danh sách chỉ số xét nghiệm</h6>
+    <table class="table table-sm align-middle">
+        <thead class="table-light">
+            <tr><th>Xét nghiệm</th><th>Kết quả</th><th>Tham chiếu</th><th>Trạng thái</th><th>Thao tác</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                var r = item.Result;
+                <tr>
+                    <td class="fw-semibold">@item.TestCode - @item.TestName</td>
+                    <td>
+                        @if (r != null)
+                        {
+                            <strong class="@(r.IsAbnormal ? "text-danger" : "text-success")">@r.ResultValue @r.Unit</strong>
+                            @if (r.IsAbnormal) { <span class="badge bg-danger ms-1">Bất thường</span> }
+                            <div class="small text-muted">v.@r.Version | Nhập bởi: @r.EnteredBy</div>
+                        }
+                        else { <span class="text-muted">Chưa nhập</span> }
+                    </td>
+                    <td class="small">@r?.ReferenceRange</td>
+                    <td>
+                        @if (r?.IsVerified == true) { <span class="badge bg-success">Đã duyệt (@r.VerifiedBy)</span> }
+                        else { <span class="badge bg-secondary">@item.Status</span> }
+                    </td>
+                    <td>
+                        @if (r?.IsVerified != true && CurrentUser.HasPermission(PermissionCodes.LabResultEnter))
+                        {
+                            <form asp-action="EnterResult" method="post" class="d-flex gap-1 mb-1">
+                                <input type="hidden" name="labOrderId" value="@Model.Id" />
+                                <input type="hidden" name="labOrderItemId" value="@item.Id" />
+                                <input name="resultValue" value="@r?.ResultValue" class="form-control form-control-sm" placeholder="Giá trị KQ" style="width:120px;" required />
+                                <input name="numericValue" value="@r?.NumericValue" type="number" step="0.01" class="form-control form-control-sm" placeholder="Số" style="width:80px;" />
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Lưu KQ</button>
+                            </form>
+                        }
+                        @if (r != null && !r.IsVerified && CurrentUser.HasPermission(PermissionCodes.LabResultVerify))
+                        {
+                            <form asp-action="VerifyResult" method="post" class="d-inline">
+                                <input type="hidden" name="labOrderId" value="@Model.Id" />
+                                <input type="hidden" name="labResultId" value="@r.Id" />
+                                <button type="submit" class="btn btn-sm btn-success">Duyệt &amp; Khóa KQ</button>
+                            </form>
+                        }
+                        @if (r != null && r.IsVerified && CurrentUser.HasPermission(PermissionCodes.LabResultAmend))
+                        {
+                            <form asp-action="AmendResult" method="post" class="d-flex gap-1">
+                                <input type="hidden" name="labOrderId" value="@Model.Id" />
+                                <input type="hidden" name="labResultId" value="@r.Id" />
+                                <input name="newResultValue" class="form-control form-control-sm" placeholder="KQ mới" style="width:90px;" required />
+                                <input name="newNumericValue" type="number" step="0.01" class="form-control form-control-sm" placeholder="Số" style="width:70px;" />
+                                <input name="reason" class="form-control form-control-sm" placeholder="Lý do đính chính*" style="width:140px;" required />
+                                <button type="submit" class="btn btn-sm btn-warning">Đính chính</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

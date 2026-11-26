@@ -1,0 +1,176 @@
+﻿@inject ICurrentUserService CurrentUser
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SmartHospital</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <div class="sh-wrapper">
+        <aside id="shSidebar" class="sh-sidebar no-print">
+            <div class="sh-brand">
+                <span class="badge bg-info text-dark">SH</span>
+                <span>SmartHospital</span>
+            </div>
+            <nav class="nav flex-column pb-4 overflow-auto">
+                <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Tổng quan (Dashboard)</a>
+
+                @if (CurrentUser.HasPermission(PermissionCodes.PatientRead))
+                {
+                    <div class="sh-nav-section">Bệnh nhân &amp; Tiếp đón</div>
+                    <a class="nav-link" asp-area="Patients" asp-controller="Patients" asp-action="Index">Hồ sơ bệnh nhân</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.AppointmentRead))
+                {
+                    <a class="nav-link" asp-area="Reception" asp-controller="Reception" asp-action="Appointments">Lịch hẹn khám</a>
+                    <a class="nav-link" asp-area="Reception" asp-controller="Reception" asp-action="QueueBoard">Tiếp đón &amp; Hàng đợi</a>
+                }
+
+                @if (CurrentUser.HasPermission(PermissionCodes.ClinicalRead) || CurrentUser.HasPermission(PermissionCodes.LabRead) || CurrentUser.HasPermission(PermissionCodes.ImagingRead))
+                {
+                    <div class="sh-nav-section">Lâm sàng &amp; Cận lâm sàng</div>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.ClinicalRead))
+                {
+                    <a class="nav-link" asp-area="Clinical" asp-controller="Clinical" asp-action="Index">Khám bệnh (EMR)</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.LabRead))
+                {
+                    <a class="nav-link" asp-area="Laboratory" asp-controller="Laboratory" asp-action="Index">Xét nghiệm (LIS)</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.ImagingRead))
+                {
+                    <a class="nav-link" asp-area="Laboratory" asp-controller="Imaging" asp-action="Index">Chẩn đoán hình ảnh</a>
+                }
+
+                @if (CurrentUser.HasPermission(PermissionCodes.InpatientRead) || CurrentUser.HasPermission(PermissionCodes.NursingRead) || CurrentUser.HasPermission(PermissionCodes.EmergencyManage) || CurrentUser.HasPermission(PermissionCodes.SurgeryRead))
+                {
+                    <div class="sh-nav-section">Nội trú &amp; Chăm sóc</div>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.EmergencyManage))
+                {
+                    <a class="nav-link" asp-area="Inpatient" asp-controller="Emergency" asp-action="Index">Khoa Cấp cứu</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.InpatientRead))
+                {
+                    <a class="nav-link" asp-area="Inpatient" asp-controller="Inpatient" asp-action="Index">Nội trú &amp; Sơ đồ giường</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.NursingRead))
+                {
+                    <a class="nav-link" asp-area="Inpatient" asp-controller="Nursing" asp-action="Index">Điều dưỡng &amp; Y lệnh</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.SurgeryRead))
+                {
+                    <a class="nav-link" asp-area="Inpatient" asp-controller="Surgery" asp-action="Index">Lịch Phẫu thuật</a>
+                }
+
+                @if (CurrentUser.HasPermission(PermissionCodes.PharmacyRead) || CurrentUser.HasPermission(PermissionCodes.InventoryManage) || CurrentUser.HasPermission(PermissionCodes.BillingRead))
+                {
+                    <div class="sh-nav-section">Dược &amp; Tài chính</div>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.PharmacyRead))
+                {
+                    <a class="nav-link" asp-area="Pharmacy" asp-controller="Pharmacy" asp-action="Index">Kho Dược &amp; Cấp phát</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.InventoryManage))
+                {
+                    <a class="nav-link" asp-area="Pharmacy" asp-controller="Pharmacy" asp-action="Inventory">Vật tư &amp; Mua hàng</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.BillingRead))
+                {
+                    <a class="nav-link" asp-area="Billing" asp-controller="Billing" asp-action="Index">Viện phí &amp; Thu ngân</a>
+                }
+
+                @if (CurrentUser.HasPermission(PermissionCodes.PortalAccess))
+                {
+                    <div class="sh-nav-section">Bệnh nhân</div>
+                    <a class="nav-link" asp-area="Portal" asp-controller="Portal" asp-action="Index">Cổng bệnh nhân</a>
+                }
+
+                @if (CurrentUser.HasPermission(PermissionCodes.ReportRead) || CurrentUser.HasPermission(PermissionCodes.HrManage) || CurrentUser.HasPermission(PermissionCodes.AdminUserManage) || CurrentUser.HasPermission(PermissionCodes.AdminCatalogManage) || CurrentUser.HasPermission(PermissionCodes.AuditLogRead))
+                {
+                    <div class="sh-nav-section">Quản trị &amp; Báo cáo</div>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.ReportRead))
+                {
+                    <a class="nav-link" asp-area="Reports" asp-controller="Reports" asp-action="Index">Báo cáo hoạt động</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.HrManage))
+                {
+                    <a class="nav-link" asp-area="HR" asp-controller="Hr" asp-action="Index">Nhân sự &amp; Ca trực</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.AdminCatalogManage))
+                {
+                    <a class="nav-link" asp-area="Admin" asp-controller="Catalogs" asp-action="Index">Danh mục Bệnh viện</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.AdminUserManage))
+                {
+                    <a class="nav-link" asp-area="Admin" asp-controller="Users" asp-action="Index">Tài khoản &amp; Phân quyền</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.AdminRoleManage))
+                {
+                    <a class="nav-link" asp-area="Admin" asp-controller="Roles" asp-action="Index">Vai trò &amp; Ma trận quyền</a>
+                }
+                @if (CurrentUser.HasPermission(PermissionCodes.AuditLogRead) || CurrentUser.HasPermission(PermissionCodes.AdminSystemStatusRead))
+                {
+                    <a class="nav-link" asp-area="Admin" asp-controller="System" asp-action="AuditLogs">Audit &amp; Hệ thống</a>
+                }
+            </nav>
+        </aside>
+
+        <div class="sh-main">
+            <header class="sh-topbar no-print">
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-lg-none" onclick="document.getElementById('shSidebar').classList.toggle('show')">Menu</button>
+                    <div>
+                        <h5 class="mb-0 fw-semibold">@ViewData["Title"]</h5>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-light text-dark border">@CurrentUser.FullName (@string.Join(", ", CurrentUser.Roles))</span>
+                    <a class="btn btn-sm btn-outline-primary" asp-area="" asp-controller="Account" asp-action="ChangePassword">Đổi mật khẩu</a>
+                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Đăng xuất</button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="sh-content">
+                @if (TempData["Success"] is string okMsg)
+                {
+                    <div class="alert alert-success alert-dismissible fade show no-print" role="alert">
+                        @okMsg
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                @if (TempData["Error"] is string errMsg)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show no-print" role="alert">
+                        @errMsg
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+}
+else
+{
+    <main class="container py-5">
+        @RenderBody()
+    </main>
+}
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

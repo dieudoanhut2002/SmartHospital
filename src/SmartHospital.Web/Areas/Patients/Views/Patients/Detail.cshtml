@@ -1,0 +1,158 @@
+@model SmartHospital.Domain.Patients.Patient
+@{
+    ViewData["Title"] = $"Hồ sơ bệnh nhân: {Model.PatientCode}";
+    var encounters = ViewBag.Encounters as IReadOnlyList<SmartHospital.Domain.Reception.Encounter> ?? [];
+    var invoices = ViewBag.Invoices as IReadOnlyList<SmartHospital.Domain.Billing.Invoice> ?? [];
+    var insurances = ViewBag.InsuranceProfiles as IReadOnlyList<SmartHospital.Domain.Billing.InsuranceProfile> ?? [];
+}
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="sh-card p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <h5 class="fw-bold mb-0">@Model.FullName</h5>
+                    <span class="text-muted small">Mã BN: <strong>@Model.PatientCode</strong></span>
+                </div>
+                <div>
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-primary">Sửa</a>
+                    <a asp-area="Reception" asp-controller="Reception" asp-action="QueueBoard" asp-route-patientId="@Model.Id" class="btn btn-sm btn-primary">+ Tiếp nhận khám</a>
+                </div>
+            </div>
+            <dl class="row small mb-0">
+                <dt class="col-4">Ngày sinh</dt><dd class="col-8">@Model.DateOfBirth?.ToString("dd/MM/yyyy")</dd>
+                <dt class="col-4">Giới tính</dt><dd class="col-8">@Model.Gender</dd>
+                <dt class="col-4">Điện thoại</dt><dd class="col-8">@Model.PhoneNumber</dd>
+                <dt class="col-4">CCCD</dt><dd class="col-8">@Model.NationalId</dd>
+                <dt class="col-4">Địa chỉ</dt><dd class="col-8">@Model.Address</dd>
+                <dt class="col-4">Nhóm máu</dt><dd class="col-8">@Model.BloodType</dd>
+            </dl>
+        </div>
+
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold text-danger">Dị ứng &amp; Cảnh báo quan trọng</h6>
+            @foreach (var a in Model.Allergies)
+            {
+                <div class="alert alert-danger py-1 px-2 small mb-1 d-flex justify-content-between align-items-center">
+                    <span><strong>Dị ứng: @a.Allergen</strong> (@a.Severity) @a.Reaction</span>
+                    <form asp-action="DeleteAllergy" method="post" class="d-inline">
+                        <input type="hidden" name="patientId" value="@Model.Id" />
+                        <input type="hidden" name="allergyId" value="@a.Id" />
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0">Xóa</button>
+                    </form>
+                </div>
+            }
+            @foreach (var al in Model.Alerts)
+            {
+                <div class="alert alert-warning py-1 px-2 small mb-1 d-flex justify-content-between align-items-center">
+                    <span><strong>@al.AlertTitle:</strong> @al.AlertDetail</span>
+                    <form asp-action="DeleteAlert" method="post" class="d-inline">
+                        <input type="hidden" name="patientId" value="@Model.Id" />
+                        <input type="hidden" name="alertId" value="@al.Id" />
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0">Xóa</button>
+                    </form>
+                </div>
+            }
+            <form asp-action="AddAllergy" method="post" class="row g-1 mt-2">
+                <input type="hidden" name="patientId" value="@Model.Id" />
+                <div class="col-5"><input name="allergen" class="form-control form-control-sm" placeholder="Chất dị ứng..." required /></div>
+                <div class="col-4"><select name="severity" class="form-select form-select-sm" asp-items="Html.GetEnumSelectList<AllergySeverity>()"></select></div>
+                <div class="col-3"><button class="btn btn-sm btn-outline-danger w-100" type="submit">+ Dị ứng</button></div>
+            </form>
+            <form asp-action="AddAlert" method="post" class="row g-1 mt-1">
+                <input type="hidden" name="patientId" value="@Model.Id" />
+                <input type="hidden" name="severity" value="Warning" />
+                <div class="col-5"><input name="title" class="form-control form-control-sm" placeholder="Tiêu đề cảnh báo..." required /></div>
+                <div class="col-4"><input name="detail" class="form-control form-control-sm" placeholder="Chi tiết" /></div>
+                <div class="col-3"><button class="btn btn-sm btn-outline-warning w-100" type="submit">+ Cảnh báo</button></div>
+            </form>
+        </div>
+
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold">Người liên hệ khẩn cấp (@Model.EmergencyContacts.Count)</h6>
+            @foreach (var ec in Model.EmergencyContacts)
+            {
+                <div class="d-flex justify-content-between small border-bottom py-1">
+                    <span><strong>@ec.FullName</strong> (@ec.Relationship) — @ec.PhoneNumber</span>
+                    <form asp-action="DeleteEmergencyContact" method="post" class="d-inline">
+                        <input type="hidden" name="patientId" value="@Model.Id" />
+                        <input type="hidden" name="contactId" value="@ec.Id" />
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0">Xóa</button>
+                    </form>
+                </div>
+            }
+            <form asp-action="AddEmergencyContact" method="post" class="row g-1 mt-2">
+                <input type="hidden" name="patientId" value="@Model.Id" />
+                <div class="col-4"><input name="fullName" class="form-control form-control-sm" placeholder="Họ tên*" required /></div>
+                <div class="col-3"><input name="relationship" class="form-control form-control-sm" placeholder="Quan hệ" /></div>
+                <div class="col-3"><input name="phoneNumber" class="form-control form-control-sm" placeholder="SĐT*" required /></div>
+                <div class="col-2"><button type="submit" class="btn btn-sm btn-outline-primary w-100">+</button></div>
+            </form>
+        </div>
+
+        <div class="sh-card p-3">
+            <h6 class="fw-bold">Thẻ bảo hiểm (BHYT/Khác)</h6>
+            @foreach (var ip in insurances)
+            {
+                <div class="d-flex justify-content-between small border-bottom py-1">
+                    <span><strong>@ip.CardNumber</strong> (@ip.ProviderName) — HSD: @ip.ValidTo?.ToString("dd/MM/yyyy")</span>
+                    <form asp-action="DeleteInsuranceProfile" method="post" class="d-inline">
+                        <input type="hidden" name="patientId" value="@Model.Id" />
+                        <input type="hidden" name="insuranceProfileId" value="@ip.Id" />
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0">Xóa</button>
+                    </form>
+                </div>
+            }
+            <form asp-action="AddInsuranceProfile" method="post" class="row g-1 mt-2">
+                <input type="hidden" name="patientId" value="@Model.Id" />
+                <div class="col-5"><input name="cardNumber" class="form-control form-control-sm" placeholder="Số thẻ BHYT*" required /></div>
+                <div class="col-4"><input name="validTo" type="date" class="form-control form-control-sm" /></div>
+                <div class="col-3"><button type="submit" class="btn btn-sm btn-outline-primary w-100">+ Thẻ</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold">Lịch sử lượt khám (@encounters.Count)</h6>
+            <table class="table table-sm small mb-0">
+                <thead><tr><th>Mã lượt khám</th><th>Ngày</th><th>Loại</th><th>Trạng thái</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var e in encounters)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@e.EncounterCode</td>
+                            <td>@HospitalTime.ToVietnamTime(e.StartedAtUtc).ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@e.EncounterType</td>
+                            <td><span class="badge bg-secondary">@e.Status</span></td>
+                            <td class="text-end">
+                                <a asp-area="Clinical" asp-controller="Clinical" asp-action="Workspace" asp-route-id="@e.Id" class="btn btn-sm btn-outline-primary">Mở EMR</a>
+                                <a asp-area="Billing" asp-controller="Billing" asp-action="CreateInvoice" asp-route-patientId="@Model.Id" asp-route-encounterId="@e.Id" class="btn btn-sm btn-outline-success">Lập HĐ</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="sh-card p-3">
+            <h6 class="fw-bold">Hóa đơn viện phí gần đây (@invoices.Count)</h6>
+            <table class="table table-sm small mb-0">
+                <thead><tr><th>Số HĐ</th><th>Ngày</th><th class="text-end">Tổng</th><th class="text-end">Đã thu</th><th>Trạng thái</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var inv in invoices)
+                    {
+                        <tr>
+                            <td>@inv.InvoiceCode</td>
+                            <td>@HospitalTime.ToVietnamTime(inv.IssuedAtUtc).ToString("dd/MM/yyyy")</td>
+                            <td class="text-end">@inv.TotalAmount.ToString("N0") đ</td>
+                            <td class="text-end">@inv.PaidAmount.ToString("N0") đ</td>
+                            <td>@inv.Status</td>
+                            <td class="text-end"><a asp-area="Billing" asp-controller="Billing" asp-action="Detail" asp-route-id="@inv.Id">Chi tiết</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

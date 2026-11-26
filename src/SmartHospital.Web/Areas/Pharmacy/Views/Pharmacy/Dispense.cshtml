@@ -1,0 +1,48 @@
+@model SmartHospital.Domain.Clinical.Prescription
+@{
+    ViewData["Title"] = $"Cấp phát đơn thuốc: {Model.PrescriptionCode}";
+    var warehouses = ViewBag.Warehouses as IReadOnlyList<SmartHospital.Domain.Pharmacy.Warehouse> ?? [];
+}
+
+<div class="sh-card p-4">
+    <div class="d-flex justify-content-between mb-3">
+        <div>
+            <h5 class="fw-bold mb-0">Đơn thuốc @Model.PrescriptionCode</h5>
+            <span class="small text-muted">Bác sĩ: @Model.DoctorName | Trạng thái: <strong>@Model.Status</strong></span>
+        </div>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Quay lại</a>
+    </div>
+
+    <form asp-action="Dispense" method="post">
+        <input type="hidden" name="prescriptionId" value="@Model.Id" />
+        <div class="mb-3" style="max-width: 320px;">
+            <label class="form-label small">Kho xuất thuốc</label>
+            <select name="warehouseId" class="form-select form-select-sm" required>
+                @foreach (var w in warehouses) { <option value="@w.Id">@w.Name</option> }
+            </select>
+        </div>
+
+        <table class="table table-sm align-middle">
+            <thead class="table-light">
+                <tr><th>Thuốc</th><th>Liều dùng</th><th class="text-end">SL Kê</th><th class="text-end">Đã cấp</th><th style="width:150px;">SL cấp lần này</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    var rem = item.QuantityPrescribed - item.QuantityDispensed;
+                    <tr>
+                        <td class="fw-semibold">@item.MedicineCode - @item.MedicineName</td>
+                        <td class="small">@item.DosageInstruction</td>
+                        <td class="text-end">@item.QuantityPrescribed @item.UnitName</td>
+                        <td class="text-end">@item.QuantityDispensed</td>
+                        <td>
+                            <input type="hidden" name="prescriptionItemId" value="@item.Id" />
+                            <input name="quantityToDispense" type="number" step="1" min="0" max="@rem" value="@rem" class="form-control form-control-sm" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary">Xác nhận xuất kho &amp; cấp phát</button>
+    </form>
+</div>

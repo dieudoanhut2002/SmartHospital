@@ -1,0 +1,110 @@
+@model SmartHospital.Domain.Billing.Invoice
+@inject ICurrentUserService CurrentUser
+@{
+    ViewData["Title"] = $"Hóa đơn: {Model.InvoiceCode}";
+    var patient = ViewBag.Patient as SmartHospital.Domain.Patients.Patient;
+    var remaining = Math.Max(0, Model.PatientResponsibilityAmount - Model.PaidAmount);
+}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="sh-card p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <h5 class="fw-bold mb-0">@Model.InvoiceCode — @patient?.FullName (@patient?.PatientCode)</h5>
+                    <span class="badge bg-primary">@Model.Status</span>
+                    @if (!string.IsNullOrEmpty(Model.EInvoiceReference))
+                    {
+                        <span class="badge bg-info text-dark ms-1">HĐĐT Demo: @Model.EInvoiceReference</span>
+                    }
+                </div>
+                <a asp-area="" asp-controller="Print" asp-action="Invoice" asp-route-invoiceId="@Model.Id" target="_blank" class="btn btn-sm btn-outline-secondary">In bảng kê / Phiếu thu</a>
+            </div>
+            <table class="table table-sm small">
+                <thead class="table-light"><tr><th>Diễn giải</th><th class="text-end">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr></thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.Description</td>
+                            <td class="text-end">@item.Quantity</td>
+                            <td class="text-end">@item.UnitPriceSnapshot.ToString("N0") đ</td>
+                            <td class="text-end fw-semibold">@item.LineTotal.ToString("N0") đ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="text-end small">
+                <div>Tổng cộng: <strong>@Model.TotalAmount.ToString("N0") đ</strong> | Bên chi trả khác: @Model.InsuranceCoveredAmount.ToString("N0") đ</div>
+                <div>Bệnh nhân phải trả: <strong>@Model.PatientResponsibilityAmount.ToString("N0") đ</strong> | Đã thu: <strong class="text-success">@Model.PaidAmount.ToString("N0") đ</strong></div>
+                <div class="fs-5 fw-bold text-danger">Còn phải thu: @remaining.ToString("N0") đ</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        @if (CurrentUser.HasPermission(PermissionCodes.BillingPaymentCollect) && remaining > 0)
+        {
+            <div class="sh-card p-3 mb-3">
+                <h6 class="fw-bold">Thu tiền thanh toán</h6>
+                <form asp-action="CollectPayment" method="post" class="row g-2">
+                    <input type="hidden" name="invoiceId" value="@Model.Id" />
+                    <div class="col-6">
+                        <label class="form-label small">Số tiền thu *</label>
+                        <input name="amount" type="number" step="100" value="@remaining" class="form-control form-control-sm" required />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small">Phương thức</label>
+                        <select name="paymentMethod" class="form-select form-select-sm" asp-items="Html.GetEnumSelectList<PaymentMethod>()"></select>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input name="isAdvance" type="checkbox" value="true" class="form-check-input" id="isAdv" />
+                            <label class="form-check-label small" for="isAdv">Thu tạm ứng</label>
+                        </div>
+                    </div>
+                    <div class="col-12"><button type="submit" class="btn btn-sm btn-success w-100">Xác nhận thu tiền</button></div>
+                </form>
+            </div>
+        }
+
+        <div class="sh-card p-3 mb-3">
+            <h6 class="fw-bold">Lịch sử thanh toán &amp; Hoàn tiền</h6>
+            @foreach (var alloc in Model.Allocations)
+            {
+                var p = alloc.Payment;
+                if (p == null) continue;
+                <div class="border rounded p-2 mb-2 small">
+                    <div class="d-flex justify-content-between">
+                        <strong>@p.ReceiptNumber (@p.PaymentMethod)</strong>
+                        <span class="text-success fw-bold">@p.Amount.ToString("N0") đ</span>
+                    </div>
+                    <div class="text-muted">Thu bởi @p.CollectedBy lúc @HospitalTime.ToVietnamTime(p.PaidAtUtc).ToString("dd/MM/yyyy HH:mm")</div>
+                    @if (CurrentUser.HasPermission(PermissionCodes.BillingRefundApprove) && p.Status != PaymentStatus.Refunded)
+                    {
+                        <form asp-action="ProcessRefund" method="post" class="d-flex gap-1 mt-2">
+                            <input type="hidden" name="invoiceId" value="@Model.Id" />
+                            <input type="hidden" name="paymentId" value="@p.Id" />
+                            <input name="refundAmount" type="number" max="@p.Amount" value="@p.Amount" class="form-control form-control-sm" style="width:110px;" required />
+                            <input name="reason" class="form-control form-control-sm" placeholder="Lý do hoàn*" required />
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Hoàn tiền</button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="sh-card p-3">
+            <h6 class="fw-bold">Tích hợp Sandbox (HĐĐT / BHYT)</h6>
+            <form asp-action="IssueDraftEInvoice" method="post" class="mb-2">
+                <input type="hidden" name="invoiceId" value="@Model.Id" />
+                <button type="submit" class="btn btn-sm btn-outline-primary w-100">Phát hành nháp HĐĐT [Demo/Sandbox]</button>
+            </form>
+            <form asp-action="SubmitInsuranceStaging" method="post" class="d-flex gap-2">
+                <input type="hidden" name="invoiceId" value="@Model.Id" />
+                <input name="claimedAmount" type="number" value="@Model.InsuranceCoveredAmount" class="form-control form-control-sm" />
+                <button type="submit" class="btn btn-sm btn-outline-secondary text-nowrap">Gửi Staging BHYT</button>
+            </form>
+        </div>
+    </div>
+</div>
